@@ -110,10 +110,10 @@ if __name__ == '__main__':
     # tiv_rock = TIVRock()
 
     model = BoreholeModel(stress_pcs, iso_rock, dip, wbo, hoop_model='kirsch')
-    model.show_all()
+    # model.show_all()
 
-    # modelBM = BoreholeModel(stress_pcs, iso_rock, dip, wbo, hoop_model='beltrami-michell')
-    # model.compare_stresses_with(modelBM)
+    modelBM = BoreholeModel(stress_pcs, iso_rock, dip, wbo, hoop_model='beltrami-michell')
+    model.compare_stresses_with(modelBM)
 
 
 
