@@ -53,7 +53,7 @@ For example:
 For ISO rock, stresses from Beltrami-Michell and Kirsh should be the same for all model settings, but they are not...
 ```python
     ...
-    modelK = BoreholeModel(stress_pcs, iso_rock, dip, wbo, hoop_model='kirsh')
+    modelK = BoreholeModel(stress_pcs, iso_rock, dip, wbo, hoop_model='kirsch')
     model.compare_stresses_with(modelK)
 ```
 
