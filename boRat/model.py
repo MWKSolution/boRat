@@ -100,8 +100,7 @@ class BoreholeModel:
 
 if __name__ == '__main__':
 
-    stress_pcs = Stress()
-    stress_pcs.set_from_PCS(SH=20, Sh=10, Sz=30, SHAzi=10)
+    stress_pcs = Stress.from_PCS(SH=20, Sh=10, Sz=30, SHAzi=10)
 
     dip = FormationDip(dip=15, dir=25)
     wbo = WellboreOrientation(hazi=55, hdev=30, Pw=5)
