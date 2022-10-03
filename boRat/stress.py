@@ -24,7 +24,7 @@ class Stress:
         return self.rot(rotation)
 
     def rot_NEV_to_TOH(self, hazi, hdev):
-        rotation = Rot.from_euler('XZY', [0, hazi, hdev], degrees=True)
+        rotation = Rot.from_euler('yxz', [hdev, -hazi, 0], degrees=True)
         return self.rot(rotation)
 
     def rot(self, rotation=None):
@@ -43,7 +43,7 @@ class Stress:
     def cart2cyl(self, theta=0):
         """Transform 3x3 stress tensor from cartesian to cylindrical coordinates for given theta coordinate.
         Theta is angle between x and r unit vectors."""
-        rotation = Rot.from_euler('Z', [theta], degrees=True)
+        rotation = Rot.from_euler('XYZ', [0, 0, theta], degrees=True)
         # rotation_matrix = rotation.as_matrix()
         # trans = self.rot(extrinsic, z=theta)
         return self.rot(rotation)

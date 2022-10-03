@@ -3,6 +3,7 @@ from boRat.tensor import Compliance, Stiffness
 from scipy.spatial.transform import Rotation as Rot
 from boRat.config import __log__
 # from boRat.config import intrinsic, extrinsic
+from abc import ABC
 
 # :todo: get typical rocks...
 ISO_ROCK = dict(E=30.14, PR=0.079)
@@ -21,7 +22,7 @@ class FormationDip:
     def get_normal_vector_NEV(self):
         """Vector perpendicular to bedding. Since for flat bedding it is pointing down (Z axis direction) it has to be rotated with -dip value!"""
         init = np.array([0, 0, 1])
-        rotation = Rot.from_euler('ZY', [self.dir, -self.dip], degrees=True)
+        rotation = Rot.from_euler('ZYX', [self.dir, -self.dip, 0], degrees=True)
         # rotation_matrix = rotation.as_matrix()
         return rotation.apply(init)
 
