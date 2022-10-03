@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from boRat.wellbore import WellboreOrientation
+from boRat.wellbore import Wellbore
 
 
 class TestWellboreVector(unittest.TestCase):
@@ -14,27 +14,27 @@ class TestWellboreVector(unittest.TestCase):
 
     def test_vertical(self):
         """Vertical well (drilled down!)"""
-        wbo = WellboreOrientation().vector
+        wbo = Wellbore().vector
         self.assertTrue(np.isclose(wbo, self.vertical).all())
 
     def test_horizontal_N(self):
         """Horizontal well drilled to the North"""
-        wbo = WellboreOrientation(hdev=90).vector
+        wbo = Wellbore(hdev=90).vector
         self.assertTrue(np.isclose(wbo, self.horizontal_N).all())
 
     def test_horizontal_E(self):
         """Horizontal well drilled to the East"""
-        wbo = WellboreOrientation(hazi=90, hdev=90).vector
+        wbo = Wellbore(hazi=90, hdev=90).vector
         self.assertTrue(np.isclose(wbo, self.horizontal_E).all())
 
     def test_horizontal_S(self):
         """Horizontal well drilled to the South"""
-        wbo = WellboreOrientation(hazi=180, hdev=90).vector
+        wbo = Wellbore(hazi=180, hdev=90).vector
         self.assertTrue(np.isclose(wbo, self.horizontal_S).all())
 
     def test_horizontal_W(self):
         """Horizontal well drilled to the West"""
-        wbo = WellboreOrientation(hazi=270, hdev=90).vector
+        wbo = Wellbore(hazi=270, hdev=90).vector
         self.assertTrue(np.isclose(wbo, self.horizontal_W).all())
 
 

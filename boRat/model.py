@@ -5,8 +5,8 @@ from boRat import Rock, ISORock, FormationDip, TIVRock
 from boRat.beltrami_michell import BeltramiMichell, Kirsch
 from boRat.config import __log__
 from boRat.plots import model_plot, stress_plot, bedding_plot, all_plot, compare_stresses_plot
-from boRat import WellboreOrientation
-from boRat.config import intrinsic, extrinsic
+from boRat import Wellbore
+# from boRat.config import intrinsic, extrinsic
 
 
 class BoreholeModel:
@@ -15,22 +15,22 @@ class BoreholeModel:
         pass
 
     def __init__(self,
-                 earth_pcs_stress: Stress,
+                 earth_stress: Stress,
                  rock: Rock,
                  formation_dip: FormationDip,
-                 wellbore_orientation: WellboreOrientation,
+                 wellbore_orientation: Wellbore,
                  hoop_model='beltrami-michell'):  # or 'kirsch'
-        self.stress_pcs = earth_pcs_stress
-        self.SHAzi = earth_pcs_stress.SHAzi
+        self.stress = earth_stress
+        # self.SHAzi = earth_pcs_stress.SHAzi
         self.rock = rock
         self.dip = formation_dip
         self.wbo = wellbore_orientation
         self.Pw = wellbore_orientation.Pw
         self.angle = self.get_angle(self.wbo.vector, self.dip.vector)
 
-        self.stress_nev = self.stress_pcs.rot(extrinsic, z=self.SHAzi)
-        self.stress_nev.clean()
-        self.stress_toh = self.stress_nev.rot(intrinsic, z=-self.wbo.hazi, y=-self.wbo.hdev)
+        # self.stress_nev = self.stress_pcs.rot(extrinsic, z=self.SHAzi)
+        self.stress.clean()
+        self.stress_toh = self.stress.rot_NEV_to_TOH(self.wbo.orien.hazi, self.wbo.orien.hdev)  #   (intrinsic, z=-self.wbo.hazi, y=-self.wbo.hdev)
         self.stress_toh.clean()
 
         self.rock_nev = self.rock.rot(intrinsic, z=-self.dip.dir, y=-self.dip.dip)
@@ -100,18 +100,19 @@ class BoreholeModel:
 
 if __name__ == '__main__':
 
-    stress_pcs = Stress.from_PCS(SH=20, Sh=10, Sz=30, SHAzi=10)
+    stress_pcs = Stress.from_PCS(SH=20, Sh=10, Sz=30)
+    stress = stress_pcs.rot_PCS_to_NEV(SHAzi=10)
 
     dip = FormationDip(dip=15, dir=25)
-    wbo = WellboreOrientation(hazi=55, hdev=30, Pw=5)
+    wbo = Wellbore(hazi=55, hdev=30, Pw=5)
 
     iso_rock = ISORock()
     # tiv_rock = TIVRock()
 
-    model = BoreholeModel(stress_pcs, iso_rock, dip, wbo, hoop_model='kirsch')
+    model = BoreholeModel(stress, iso_rock, dip, wbo, hoop_model='kirsch')
     model.show_all()
 
-    modelBM = BoreholeModel(stress_pcs, iso_rock, dip, wbo, hoop_model='beltrami-michell')
+    modelBM = BoreholeModel(stress, iso_rock, dip, wbo, hoop_model='beltrami-michell')
     model.compare_stresses_with(modelBM)
 
 

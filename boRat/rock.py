@@ -2,7 +2,7 @@ import numpy as np
 from boRat.tensor import Compliance, Stiffness
 from scipy.spatial.transform import Rotation as Rot
 from boRat.config import __log__
-from boRat.config import intrinsic, extrinsic
+# from boRat.config import intrinsic, extrinsic
 
 # :todo: get typical rocks...
 ISO_ROCK = dict(E=30.14, PR=0.079)
@@ -16,16 +16,19 @@ class FormationDip:
     def __init__(self, dip=0, dir=0):
         self.dip = dip  # formation dip
         self.dir = dir  # dip direction
-        self.vector = self.get_normal_vector()
+        self.vector = self.get_normal_vector_NEV()
 
-    def get_normal_vector(self):
+    def get_normal_vector_NEV(self):
         """Vector perpendicular to bedding. Since for flat bedding it is pointing down (Z axis direction) it has to be rotated with -dip value!"""
         init = np.array([0, 0, 1])
-        rotation = Rot.from_euler(extrinsic, [0, -self.dip, self.dir], degrees=True)
-        rotation_matrix = rotation.as_matrix()
+        rotation = Rot.from_euler('ZY', [self.dir, -self.dip], degrees=True)
+        # rotation_matrix = rotation.as_matrix()
         return rotation.apply(init)
 
     def __repr__(self):
+        return f'FormationDip({self.dip!s}, {self.dir!s})'
+
+    def __str__(self):
         return f'FormationDip(Dip angle: {self.dip!s}, Dip direction: {self.dir!s}, Normal vector: {self.vector!s} NEV)'
 
 
@@ -143,3 +146,7 @@ class ORTRock(Rock):
         c[5, 5] = 1 / Gxy
 
 
+if __name__ == '__main__':
+    fd = FormationDip(dip=45, dir=45)
+    print(f'str : {fd!s}')
+    print(f'repr: {fd!r}')

@@ -1,21 +1,33 @@
 import numpy as np
 from scipy.spatial.transform import Rotation as Rot
-from boRat.config import intrinsic, extrinsic
+from collections import namedtuple
+
+Orientation = namedtuple('Orientation', ['hazi', 'hdev'])
 
 
-class WellboreOrientation:
+class Wellbore:
     """Class defining wellbore orientation: azimuth and deviation along with unit vector parallel to wellbore axis."""
     def __init__(self, hazi=0, hdev=0, Pw=0):
-        self.hazi = hazi  # hole azimuth
-        self.hdev = hdev  # hole deviation
+        self.orien = Orientation(hazi=hazi, hdev=hdev)  # WB orientation - azimuth and deviation
+        # self.hazi = hazi  # hole azimuth
+        # self.hdev = hdev  # hole deviation
         self.Pw = Pw  # mud pressure
-        self.vector = self.get_parallel_vector()
+        self.vector = self.get_parallel_vector_NEV()  # vector in NEV coordiantes
 
-    def get_parallel_vector(self):
+    def get_parallel_vector_NEV(self):
         """Get vector which is parallel to borehole axis by rotating unit vector perpendicular to earth surface."""
-        init = np.array([0, 0, 1])  # vector pointing down!!!
-        rotation = Rot.from_euler(extrinsic, [0, self.hdev, self.hazi], degrees=True)
+        init = np.array([0, 0, 1], dtype=np.float64)  # vector pointing down - parallel to vertical well !!!
+        rotation = Rot.from_euler('ZY', [self.orien.hazi, self.orien.hdev], degrees=True)
         return rotation.apply(init)
 
     def __repr__(self):
-        return f'WellboreOrientation(Hole azimuth: {self.hazi!s}, Hole deviation: {self.hdev!s}, Parallel vector: {self.vector!s} NEV)'
+        return f'WellboreOrientation({self.orien.hazi!s}, {self.orien.hdev!s}, {self.Pw!s})'
+
+    def __str__(self):
+        return f'WellboreOrientation(Hole azimuth: {self.orien.hazi!s}, Hole deviation: {self.orien.hdev!s}, Parallel vector: {self.vector!s} NEV, Mud pressure: {self.Pw!s})'
+
+
+if __name__ == '__main__':
+    wbo = Wellbore(hazi=45, hdev=45, Pw=10)
+    print(f'str : {wbo!s}')
+    print(f'repr: {wbo!r}')
