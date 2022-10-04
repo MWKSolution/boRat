@@ -6,7 +6,7 @@ import pandas as pd
 
 def model_traces(model):
     X, Y, Z = np.mgrid[-5:5:50j, -5:5:50j, -5:5:50j]
-    normal_vector = model.dip.vector
+    normal_vector = model.rockNEV.dip.vector
     parallel_vector = model.wbo.vector
     # vector [A, B, C] - vector normal to bedding plane
     A, B, C = normal_vector[0], normal_vector[1], normal_vector[2]
@@ -113,8 +113,8 @@ def bedding_trace(model):
     yy = np.linspace(-2, 2, num=100)
     X, Y = np.meshgrid(np.radians(xx), yy)
     beta = np.radians(model.angle)
-    wbo, dip = model.wbo, model.dip
-    hazi = 0 if wbo.hdev == 0 else wbo.hazi
+    wbo, dip = model.wbo, model.rockNEV.dip
+    hazi = 0 if wbo.orien.hdev == 0 else wbo.orien.hazi
     ddir = 0 if dip.dip == 0 else dip.dir
     fi = np.radians(hazi - ddir)
     Z = np.sin(beta) * np.sin(X-np.pi/2+fi) - np.cos(beta) * Y
@@ -167,11 +167,11 @@ def all_plot(model):
     # overall layout
     fig.update_layout(width=1800, height=600)
     description = f'Borehole stress and bedding model:' \
-                  f' far field stresses: SH: {model.stress_pcs.stress[0,0]}, Sh: {model.stress_pcs.stress[1,1]},' \
-                  f' Sz: {model.stress_pcs.stress[2,2]}, SHazi: {model.SHAzi};' \
-                  f' formation: dip: {model.dip.dip}, direction: {model.dip.dir};' \
-                  f' wellbore: azi: {model.wbo.hazi}, dev: {model.wbo.hdev}, mud pressure: {model.Pw};' \
-                  f' rock: {model.rock.symmetry}'
+                  f' far field stresses: SH: {model.stressNEV.stress[0,0]}, Sh: {model.stressNEV.stress[1,1]},' \
+                  f' Sz: {model.stressNEV.stress[2,2]}, SHazi: error;' \
+                  f' formation: dip: {model.rockNEV.dip.dip}, direction: {model.rockNEV.dip.dir};' \
+                  f' wellbore: azi: {model.wbo.orien.hazi}, dev: {model.wbo.orien.hdev}, mud pressure: {model.wbo.Pw};' \
+                  f' rock: {model.rockNEV.symmetry}'
     fig.update_layout(title=dict(text=description))
     return fig
 

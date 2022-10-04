@@ -129,7 +129,7 @@ class BeltramiMichell(HoopStress):
                               [dtau_xz, dtau_yz, dsig_zz]])
 
         hoop_stress.stress = np.add(s, dh.stress)
-        hoop_stress_cyl = hoop_stress.cart2cyl(-theta)
+        hoop_stress_cyl = hoop_stress.cart2cyl(theta)
         del hoop_stress
 
         return hoop_stress_cyl
@@ -146,6 +146,7 @@ class Kirsch(HoopStress):
         s = self.far_field_stress.stress
         sig_rr = self.Pw
         sig_tt = s[0, 0] + s[1, 1] - 2 * (s[0, 0] - s[1, 1]) * np.cos(2 * t) - 4 * s[0, 1] * np.sin(2 * t) - self.Pw
+        # sig_tt = s[0, 0] + s[1, 1] - 2 * (s[0, 0] - s[1, 1]) * np.cos(2 * t) - 4 * s[0, 1] * np.sin(2 * t)
         sig_zz = s[2, 2] - self.PR * (2 * ((s[0, 0] - s[1, 1]) * np.cos(2 * t)) + 4 * s[0, 1] * np.sin(2 * t))
         tau_rt = 0
         tau_rz = 0

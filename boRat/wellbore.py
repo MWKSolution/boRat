@@ -9,8 +9,6 @@ class Wellbore:
     """Class defining wellbore orientation: azimuth and deviation along with unit vector parallel to wellbore axis."""
     def __init__(self, hazi=0, hdev=0, Pw=0):
         self.orien = Orientation(hazi=hazi, hdev=hdev)  # WB orientation - azimuth and deviation
-        # self.hazi = hazi  # hole azimuth
-        # self.hdev = hdev  # hole deviation
         self.Pw = Pw  # mud pressure
         self.vector = self.get_parallel_vector_NEV()  # vector in NEV coordiantes
 

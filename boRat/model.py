@@ -6,7 +6,6 @@ from boRat.beltrami_michell import BeltramiMichell, Kirsch
 from boRat.config import __log__
 from boRat.plots import model_plot, stress_plot, bedding_plot, all_plot, compare_stresses_plot
 from boRat import Wellbore
-# from boRat.config import intrinsic, extrinsic
 
 
 class BoreholeModel:
@@ -15,56 +14,50 @@ class BoreholeModel:
         pass
 
     def __init__(self,
-                 earth_stress: Stress,
+                 stress: Stress,
                  rock: Rock,
-                 formation_dip: FormationDip,
-                 wellbore_orientation: Wellbore,
+                 wbo: Wellbore,
                  hoop_model='beltrami-michell'):  # or 'kirsch'
-        self.stress = earth_stress
-        # self.SHAzi = earth_pcs_stress.SHAzi
-        self.rock = rock
-        self.dip = formation_dip
-        self.wbo = wellbore_orientation
-        self.Pw = wellbore_orientation.Pw
-        self.angle = self.get_angle(self.wbo.vector, self.dip.vector)
+        self.stressNEV = stress
+        self.rockNEV = rock
+        self.wbo = wbo
+        self.angle = self.get_angle(self.wbo.vector, self.rockNEV.dip.vector)
+        self.stressNEV.clean()
+        self.rockNEV.clean()
 
-        # self.stress_nev = self.stress_pcs.rot(extrinsic, z=self.SHAzi)
-        self.stress.clean()
-        self.stress_toh = self.stress.rot_NEV_to_TOH(self.wbo.orien.hazi, self.wbo.orien.hdev)  #   (intrinsic, z=-self.wbo.hazi, y=-self.wbo.hdev)
-        self.stress_toh.clean()
+        self.stressTOH = self.stressNEV.rot_NEV_to_TOH(self.wbo.orien.hazi, self.wbo.orien.hdev)
+        self.stressTOH.clean()
 
-        # self.rock_nev = self.rock.rot(intrinsic, z=-self.dip.dir, y=-self.dip.dip)
-        self.rock_nev.clean()
-        self.rock_toh = self.rock_nev.rot(extrinsic, z=self.wbo.hazi, y=self.wbo.hdev)
-        self.rock_toh.clean()
+        self.rockTOH = self.rockNEV.rot_NEV_to_TOH(self.wbo.orien.hazi, self.wbo.orien.hdev)
+        self.rockTOH.clean()
 
-        __log__.info('-------------------- model description start --------------------')
-        __log__.info(f'Principal stresses [Mpa]: {self.stress_pcs!s}')
-        __log__.info(f'SH azimuth [deg]: {self.SHAzi:.2f}')
-        __log__.info(f'Mud Pressure [Mpa]: {self.Pw:.2f}')
-        __log__.info(f'{self.rock!s}')
-        if isinstance(self.rock, TIVRock):
-            __log__.info(f"TIV: PRhv= {self.rock.PRhv:.4f}; Gv Huber's approx.={self.rock.GvHuber:.4f}, Gv= {self.rock.Gv:.4f}")
-        __log__.info(f'{self.dip!s}')
-        __log__.info(f'{self.wbo!s}')
-        __log__.info(f'Angle between bedding plane and wellbore axis: {self.angle:.4f}')
-        __log__.debug(f'Stresses in NEV coordinates: {self.stress_nev!s}')
-        __log__.debug(f'Stresses in TOH coordinates: {self.stress_toh!s}')
-        __log__.debug(f'Rock tensors in NEV coordinates: {self.rock_nev!s}')
-        __log__.debug(f'Rock tensors in TOH coordinates: {self.rock_toh!s}')
-        __log__.info(f'Anisotropy level: {self.rock.symmetry!s}, Model: {hoop_model!s}')
-        __log__.info('-------------------- model description end --------------------')
+        # __log__.info('-------------------- model description start --------------------')
+        # __log__.info(f'Principal stresses [Mpa]: {self.stress_pcs!s}')
+        # __log__.info(f'SH azimuth [deg]: {self.SHAzi:.2f}')
+        # __log__.info(f'Mud Pressure [Mpa]: {self.Pw:.2f}')
+        # __log__.info(f'{self.rock!s}')
+        # if isinstance(self.rock, TIVRock):
+        #     __log__.info(f"TIV: PRhv= {self.rock.PRhv:.4f}; Gv Huber's approx.={self.rock.GvHuber:.4f}, Gv= {self.rock.Gv:.4f}")
+        # __log__.info(f'{self.dip!s}')
+        # __log__.info(f'{self.wbo!s}')
+        # __log__.info(f'Angle between bedding plane and wellbore axis: {self.angle:.4f}')
+        # __log__.debug(f'Stresses in NEV coordinates: {self.stress_nev!s}')
+        # __log__.debug(f'Stresses in TOH coordinates: {self.stress_toh!s}')
+        # __log__.debug(f'Rock tensors in NEV coordinates: {self.rock_nev!s}')
+        # __log__.debug(f'Rock tensors in TOH coordinates: {self.rock_toh!s}')
+        # __log__.info(f'Anisotropy level: {self.rock.symmetry!s}, Model: {hoop_model!s}')
+        # __log__.info('-------------------- model description end --------------------')
 
         if hoop_model == 'beltrami-michell':
             self.Hoop = BeltramiMichell
-        elif hoop_model == 'kirsch' and self.rock.symmetry == 'ISO':
+        elif hoop_model == 'kirsch' and self.rockNEV.symmetry == 'ISO':
             self.Hoop = Kirsch
         else:
             self.Hoop = None
             pass
             # :todo: raise sth later...
 
-        self.model = self.Hoop(self.rock_toh, self.stress_toh, self.Pw)
+        self.model = self.Hoop(self.rockTOH, self.stressTOH, self.wbo.Pw)
 
     @staticmethod
     def get_angle(v1, v2):
@@ -105,19 +98,17 @@ if __name__ == '__main__':
     ISO_ROCK = dict(E=30.14, PR=0.079)
     TIV_ROCK = dict(Ev=15.42, Eh=31.17, PRv=0.32, PRhh=0.079, Gv=7.05)
 
-    dip = FormationDip(dip=15, dir=25)
+    dip = FormationDip(dip=10, dir=20)
 
     iso = Rock.ISO_from_moduli(**ISO_ROCK, dip=dip)
-    tiv = Rock.TIV_from_moduli(**TIV_ROCK, dip=dip)
+    # tiv = Rock.TIV_from_moduli(**TIV_ROCK, dip=dip)
 
+    wbo = Wellbore(hazi=30, hdev=40, Pw=5)
 
-    wbo = Wellbore(hazi=55, hdev=30, Pw=5)
-
-
-    model = BoreholeModel(stress, iso, dip, wbo, hoop_model='kirsch')
+    model = BoreholeModel(stress, iso, wbo, hoop_model='kirsch')
     model.show_all()
 
-    modelBM = BoreholeModel(stress, iso, dip, wbo, hoop_model='beltrami-michell')
+    modelBM = BoreholeModel(stress, iso, wbo, hoop_model='beltrami-michell')
     model.compare_stresses_with(modelBM)
 
 

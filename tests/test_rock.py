@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from boRat.rock import ISORock, TIVRock, ORTRock, FormationDip
+from boRat.rock import Rock, FormationDip
 
 
 class TestNormalVector(unittest.TestCase):

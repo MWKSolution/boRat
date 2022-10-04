@@ -1,12 +1,6 @@
 import numpy as np
 from scipy.spatial.transform import Rotation as Rot
 from boRat.config import tolerance as tol
-# from collections import namedtuple
-# from boRat.config import intrinsic, extrinsic
-
-
-# StressPCS = namedtuple('StressPCS', ['SH', 'Sh', 'Sz'], defaults=[0.0, 0.0, 0.0])
-# StressOrientation = namedtuple('StressOrientation', ['SHazi', 'Svdev'], defaults=[0.0, 0.0])
 
 
 class Stress:
@@ -38,10 +32,6 @@ class Stress:
         Returns new out-of-place Stress instance"""
         # get new instance of Stress (out-of-place)
         rotated = Stress()
-        # get rotation matrix
-        # rotation = Rot.from_euler(mode, [x, y, z], degrees=True)
-        # rotation_matrix = rotation.as_matrix()
-        # rotate
         rotation_matrix = rotation.as_matrix()
         rotated.stress = rotation_matrix @ self.stress @ rotation_matrix.transpose()
         return rotated
@@ -49,21 +39,13 @@ class Stress:
     def rot_inplace(self, rotation=None):
         """Rotate 3x3 stress tensor using given angles.
         Returns new out-of-place Stress instance"""
-        # get new instance of Stress (out-of-place)
-        # rotated = Stress()
-        # get rotation matrix
-        # rotation = Rot.from_euler(mode, [x, y, z], degrees=True)
-        # rotation_matrix = rotation.as_matrix()
-        # rotate
         rotation_matrix = rotation.as_matrix()
         self.stress = rotation_matrix @ self.stress @ rotation_matrix.transpose()
 
     def cart2cyl(self, theta=0):
         """Transform 3x3 stress tensor from cartesian to cylindrical coordinates for given theta coordinate.
         Theta is angle between x and r unit vectors."""
-        rotation = Rot.from_euler('XYZ', [0, 0, theta], degrees=True)
-        # rotation_matrix = rotation.as_matrix()
-        # trans = self.rot(extrinsic, z=theta)
+        rotation = Rot.from_euler('XYZ', [0, 0, -theta], degrees=True)
         return self.rot(rotation)
 
     def clean(self):
