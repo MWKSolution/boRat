@@ -3,22 +3,31 @@ from scipy.spatial.transform import Rotation as Rot
 from boRat.config import tolerance as tol
 
 
-
+class BondTransformationNotImplemented(Exception):
+    pass
 
 
 class TensorVoigt:
     """Base class for tensor in Voigt notation (6x6)"""
-    def __init__(self):
-        self.tensor = np.zeros((6, 6), dtype=np.float64)
+    def __init__(self, tensor=np.zeros((6, 6), dtype=np.float64)):
+        self.tensor = tensor
 
-    def rot(self, mode, x=0, y=0, z=0):
+    def rot(self, rotation):
         """Rotate tensor in Voigt notation using Bond transformation matrix calculated from given angles."""
-        rotation = Rot.from_euler(mode, [x, y, z], degrees=True)
+        # rotation = Rot.from_euler(mode, [x, y, z], degrees=True)
         rotation_matrix = rotation.as_matrix()
         bt_matrix = self.bond_transformation(rotation_matrix)
-        rotated = TensorVoigt()
+        rotated = self.__class__()  # for inherited classes !!!
         rotated.tensor = bt_matrix @ self.tensor @ bt_matrix.transpose()
         return rotated
+
+    # def rot(self, rotation):  #  !!! IN PLACE
+    #     """Rotate tensor in Voigt notation using Bond transformation matrix calculated from given angles."""
+    #     # rotation = Rot.from_euler(mode, [x, y, z], degrees=True)
+    #     rotation_matrix = rotation.as_matrix()
+    #     bt_matrix = self.bond_transformation(rotation_matrix)
+    #     rotated = TensorVoigt()
+    #     self.tensor = bt_matrix @ self.tensor @ bt_matrix.transpose()
 
     def __repr__(self):
         return f'TensorVoigt(\n{self.tensor!s})'
@@ -29,9 +38,11 @@ class TensorVoigt:
 
     @staticmethod
     def bond_transformation(a):
-        """Function for creating Bond transformation matrix(6x6) from given 3x3 rotation matrix."""
+        """Function for creating Bond transformation matrix(6x6) from given 3x3 rotation matrix.
+        !!! But only for compliance or stiffness !!!
+        Defined here beacuse there is reference in rot method."""
         # https://scicomp.stackexchange.com/questions/35600/4th-order-tensor-rotation-sources-to-refer
-        return np.zeros((6, 6), dtype=np.float64)
+        raise BondTransformationNotImplemented('Implemented only for child classes: Compliance, Stiffness.')
 
 
 class Compliance(TensorVoigt):
@@ -52,7 +63,6 @@ class Compliance(TensorVoigt):
                           l31 * l12 + l32 * l11],
                          [2 * l21 * l11, 2 * l12 * l22, 2 * l13 * l23, l13 * l22 + l12 * l23, l13 * l21 + l11 * l23,
                           l11 * l22 + l12 * l21]])
-
         return bond
 
 
@@ -67,12 +77,16 @@ class Stiffness(TensorVoigt):
         # rotating of stiffness tensor? for rotation of stresses
         bond = np.array([[l11 ** 2, l12 ** 2, l13 ** 2, 2 * l12 * l13, 2 * l13 * l11, 2 * l12 * l11],
                           [l21 ** 2, l22 ** 2, l23 ** 2, 2 * l23 * l22, 2 * l23 * l21, 2 * l22 * l21],
-                          [l31 ** 2, l32 ** 2, l33 ** 2, l33 * l32, l33 * l31, l32 * l31],
+                          [l31 ** 2, l32 ** 2, l33 ** 2, 2 * l33 * l32, 2 * l33 * l31, 2 * l32 * l31],
                           [l31 * l21, l32 * l22, l33 * l23, l33 * l22 + l32 * l23, l33 * l21 + l31 * l23,
                            l31 * l22 + l32 * l21],
                           [l31 * l11, l32 * l12, l33 * l13, l33 * l12 + l32 * l13, l33 * l11 + l31 * l13,
                            l31 * l12 + l32 * l11],
                           [l21 * l11, l12 * l22, l13 * l23, l13 * l22 + l12 * l23, l13 * l21 + l11 * l23,
                            l11 * l22 + l12 * l21]])
-
         return bond
+
+
+if __name__ == '__main__':
+    t = TensorVoigt()
+    t.bond_transformation('x')

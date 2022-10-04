@@ -1,7 +1,7 @@
 import numpy as np
 
 from boRat import Stress
-from boRat import Rock, ISORock, FormationDip, TIVRock
+from boRat import Rock, FormationDip
 from boRat.beltrami_michell import BeltramiMichell, Kirsch
 from boRat.config import __log__
 from boRat.plots import model_plot, stress_plot, bedding_plot, all_plot, compare_stresses_plot
@@ -33,7 +33,7 @@ class BoreholeModel:
         self.stress_toh = self.stress.rot_NEV_to_TOH(self.wbo.orien.hazi, self.wbo.orien.hdev)  #   (intrinsic, z=-self.wbo.hazi, y=-self.wbo.hdev)
         self.stress_toh.clean()
 
-        self.rock_nev = self.rock.rot(intrinsic, z=-self.dip.dir, y=-self.dip.dip)
+        # self.rock_nev = self.rock.rot(intrinsic, z=-self.dip.dir, y=-self.dip.dip)
         self.rock_nev.clean()
         self.rock_toh = self.rock_nev.rot(extrinsic, z=self.wbo.hazi, y=self.wbo.hdev)
         self.rock_toh.clean()
@@ -100,18 +100,24 @@ class BoreholeModel:
 
 if __name__ == '__main__':
 
-    stress = Stress.from_PCS(SH=20, Sh=10, Sz=30).rot_PCS_to_NEV(SHAzi=10)
+    stress = Stress.from_PCS(SH=20, Sh=10, Sv=30, SHazi=10)
+
+    ISO_ROCK = dict(E=30.14, PR=0.079)
+    TIV_ROCK = dict(Ev=15.42, Eh=31.17, PRv=0.32, PRhh=0.079, Gv=7.05)
 
     dip = FormationDip(dip=15, dir=25)
+
+    iso = Rock.ISO_from_moduli(**ISO_ROCK, dip=dip)
+    tiv = Rock.TIV_from_moduli(**TIV_ROCK, dip=dip)
+
+
     wbo = Wellbore(hazi=55, hdev=30, Pw=5)
 
-    iso_rock = ISORock()
-    # tiv_rock = TIVRock()
 
-    model = BoreholeModel(stress, iso_rock, dip, wbo, hoop_model='kirsch')
+    model = BoreholeModel(stress, iso, dip, wbo, hoop_model='kirsch')
     model.show_all()
 
-    modelBM = BoreholeModel(stress, iso_rock, dip, wbo, hoop_model='beltrami-michell')
+    modelBM = BoreholeModel(stress, iso, dip, wbo, hoop_model='beltrami-michell')
     model.compare_stresses_with(modelBM)
 
 

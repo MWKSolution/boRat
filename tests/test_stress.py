@@ -7,7 +7,7 @@ class TestPCS(unittest.TestCase):
 
     def setUp(self) -> None:
         # self.s = stress.Stress()
-        self.s = stress.Stress.from_PCS(SH=1, Sh=2, Sz=3)
+        self.s = stress.Stress.from_PCS(SH=1, Sh=2, Sv=3)
 
     def test_diagonal(self):
         """Testing constructing diagonal stress matrix from principal stresses"""
@@ -19,39 +19,39 @@ class TestPCStoNEV(unittest.TestCase):
 
     def setUp(self) -> None:
         # self.s = stress.Stress()
-        self.s = stress.Stress.from_PCS(SH=1, Sh=2, Sz=3)
+        self.s = stress.Stress.from_PCS(SH=1, Sh=2, Sv=3)
 
     def test_SH_N(self):
-        """SHAzi - NS"""
+        """SHazi - NS"""
         result = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
-        rot = self.s.rot_PCS_to_NEV(SHAzi=0)
-        self.assertTrue(np.isclose(rot.stress, result).all())
+        self.s.rot_PCS_to_NEV(SHazi=0)
+        self.assertTrue(np.isclose(self.s.stress, result).all())
 
     def test_SH_E(self):
-        """SHAzi - EW"""
+        """SHazi - EW"""
         result = np.array([[2, 0, 0], [0, 1, 0], [0, 0, 3]])
-        rot = self.s.rot_PCS_to_NEV(SHAzi=90)
-        self.assertTrue(np.isclose(rot.stress, result).all())
+        self.s.rot_PCS_to_NEV(SHazi=90)
+        self.assertTrue(np.isclose(self.s.stress, result).all())
 
     def test_SH_S(self):
-        """SHAzi - SN = NS"""
+        """SHazi - SN = NS"""
         result = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
-        rot = self.s.rot_PCS_to_NEV(SHAzi=180)
-        self.assertTrue(np.isclose(rot.stress, result).all())
+        self.s.rot_PCS_to_NEV(SHazi=180)
+        self.assertTrue(np.isclose(self.s.stress, result).all())
 
     def test_SH_W(self):
-        """SHAzi - WE = EW"""
+        """SHazi - WE = EW"""
         result = np.array([[2, 0, 0], [0, 1, 0], [0, 0, 3]])
-        rot = self.s.rot_PCS_to_NEV(SHAzi=270)
-        self.assertTrue(np.isclose(rot.stress, result).all())
+        self.s.rot_PCS_to_NEV(SHazi=270)
+        self.assertTrue(np.isclose(self.s.stress, result).all())
 
 
 class TestNEVtoTOH(unittest.TestCase):
 
     def setUp(self) -> None:
         # self.s = stress.Stress()
-        self.nev = stress.Stress.from_PCS(SH=1, Sh=2, Sz=3)
-        self.s = self.nev.rot_PCS_to_NEV(SHAzi=0)
+        self.s = stress.Stress.from_PCS(SH=1, Sh=2, Sv=3, SHazi=0)
+        # self.s = self.nev.rot_PCS_to_NEV(SHazi=0)
 
     def test_horizontal_N(self):
         """SH N to horizontal N"""
@@ -82,8 +82,8 @@ class TestCart2cyl(unittest.TestCase):
 
     def setUp(self) -> None:
         # self.s = stress.Stress()
-        self.nev = stress.Stress.from_PCS(SH=1, Sh=2, Sz=3)
-        self.s = self.nev.rot_PCS_to_NEV(SHAzi=0)
+        self.s = stress.Stress.from_PCS(SH=1, Sh=2, Sv=3, SHazi=0)
+        # self.s = self.nev.rot_PCS_to_NEV(SHazi=0)
 
     def test_theta_90(self):
         """Theta = 90 deg"""

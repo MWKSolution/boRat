@@ -11,8 +11,8 @@ tolerance = 1e-12
 
 """"
 Euler angles rotations helper:
-extrinsic = 'zyx' --->
-intrinsic = 'XYZ' <---
+intrinsic = 'zyx' --->
+extrinsic = 'XYZ' <---
 
 right hand rotations helper:
   X ( Y -> Z)

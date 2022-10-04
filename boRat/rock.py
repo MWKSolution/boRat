@@ -14,6 +14,7 @@ ORT_ROCK = dict(Ex=30, Ey=20, Ez=15, PRyx=0.3, PRzx=0.2, PRzy=0.1, Gyz=6, Gxz=7,
 class FormationDip:
     """Class defining formation dip: dip and direction along with vector perpendicular to bedding.
      For flat bedding vector is pointing in Z axis direction (down!!!)."""
+
     def __init__(self, dip=0, dir=0):
         self.dip = dip  # formation dip
         self.dir = dir  # dip direction
@@ -38,29 +39,44 @@ class Rock:
         compliance - compliance tensor in Voigt notation,
         stiffness - stiffness tensor in Voigt notation,
         ..."""
-    # :todo: lampiere verification and other verifications for E, PR and G
-    def __init__(self, **kwargs):
-        self.compliance = Compliance()
-        self.stiffness = Stiffness()
-        self.symmetry = None
 
-    def set_compliance(self, *kwargs):
-        """Set compliance tensor for the rock basing on given elastic moduli of the rock.
-        Function implementation depends on level of anisotropy of the rock and is defined in child classes of Rock:
-        ISO, TIV, ORT."""
-        pass
+    # :todo: lampiere verification and other verifications for E, PR and G
+    def __init__(self, compliance=Compliance(), dip=FormationDip()):
+        self.compliance = compliance
+        self.rot_PSC_to_NEV(dip.dip, dip.dir)
+        self.stiffness = Stiffness(self.get_stiffness())
+        self.vector = dip.vector
+        # self.symmetry = None
+
+    # def set_compliance(self, *kwargs):
+    #     """Set compliance tensor for the rock basing on given elastic moduli of the rock.
+    #     Function implementation depends on level of anisotropy of the rock and is defined in child classes of Rock:
+    #     ISO, TIV, ORT."""
+    #     pass
 
     def get_stiffness(self):
         """Get stiffness from compliance. By definition, it is inversion of compliance."""
-        self.stiffness.tensor = np.linalg.inv(self.compliance.tensor)
+        return np.linalg.inv(self.compliance.tensor)
 
-    def rot(self, x=0, y=0, z=0):
+    def rot_PSC_to_NEV(self, dip, dir):
+        rotation = Rot.from_euler('yzx', [-dip, dir, 0], degrees=True)
+        self.rot_inplace(rotation)
+
+    def rot_NEV_to_TOH(self, hazi, hdev):
+        rotation = Rot.from_euler('yxz', [hdev, -hazi, 0], degrees=True)
+        return self.rot(rotation)
+
+    def rot(self, rotation):
         """Rotate compliance tensor with given angles and get stiffness tensor."""
         rotated = Rock()
-        rotated.compliance = self.compliance.rot(x, y, z)
+        rotated.compliance = self.compliance.rot(rotation)
         rotated.get_stiffness()
-        rotated.symmetry = self.symmetry
+        # rotated.symmetry = self.symmetry
         return rotated
+
+    def rot_inplace(self, rotation):
+        # self.compliance = self.compliance.rot(rotation)
+        self.compliance.rot(rotation)
 
     def clean(self):
         self.compliance.clean()
@@ -69,22 +85,23 @@ class Rock:
     def __repr__(self):
         return f'Rock:(\nCompliance:({self.compliance!s})\nStiffness:({self.stiffness!s}))'
 
+    # class ISORock(Rock):
+    #     """Class for isotropic (ISO) rocks."""
+    #     def __init__(self, compliance):
+    #         super().__init__(compliance)
+    #         self.symmetry = 'ISO'
+    #         # self.set_compliance(E, PR)
+    #         # self.get_stiffness()
+    #         # self.E = E
+    #         # self.PR = PR
 
-class ISORock(Rock):
-    """Class for isotropic (ISO) rocks."""
-    def __init__(self,
-                 E=ISO_ROCK['E'],
-                 PR=ISO_ROCK['PR']):
-        super().__init__()
-        self.symmetry = 'ISO'
-        self.set_compliance(E, PR)
-        self.get_stiffness()
-        self.E = E
-        self.PR = PR
-
-    def set_compliance(self, E, PR):
+    @classmethod
+    def ISO_from_moduli(cls,
+                        E=ISO_ROCK['E'],
+                        PR=ISO_ROCK['PR'],
+                        dip=FormationDip()):
         """Set compliance tensor from given elastic moduli: Young Modulus(E) as Poisson Ratio(PR)"""
-        c = self.compliance.tensor
+        c = np.zeros((6, 6), dtype=np.float64)
         c[0, 0], c[0, 1], c[0, 2] = 1 / E, -PR / E, -PR / E
         c[1, 0], c[1, 1], c[1, 2] = -PR / E, 1 / E, -PR / E
         c[2, 0], c[2, 1], c[2, 2] = -PR / E, -PR / E, 1 / E
@@ -92,26 +109,34 @@ class ISORock(Rock):
         c[4, 4] = 2 * (1 + PR) / E
         c[5, 5] = 2 * (1 + PR) / E
 
+        comp = Compliance(tensor=c)
 
-class TIVRock(Rock):
-    """Class for anisotropic rocks with TIV symmetry"""
-    def __init__(self,
-                 Ev=TIV_ROCK['Ev'],
-                 Eh=TIV_ROCK['Eh'],
-                 PRv=TIV_ROCK['PRv'],
-                 PRhh=TIV_ROCK['PRhh'],
-                 Gv=TIV_ROCK['Gv']):
-        super().__init__()
-        self.symmetry = 'TIV'
-        self.set_compliance(Ev, Eh, PRv, PRhh, Gv)
-        self.get_stiffness()
-        C = self.stiffness.tensor
-        self.PRhv = - (C[0, 2]*(C[0, 1] - C[0, 0])) / (C[0, 0] * C[2, 2] - C[0, 2]**2)
-        self.Gv = Gv
-        self.GvHuber = np.sqrt(Ev * Eh) / (2 * (1 + np.sqrt(PRv * self.PRhv)))
+        return cls(comp, dip)
 
-    def set_compliance(self, Ev, Eh, PRv, PRhh, Gv):
-        c = self.compliance.tensor
+
+# class TIVRock(Rock):
+#     """Class for anisotropic rocks with TIV symmetry"""
+#
+#     def __init__(self, compliance):
+#         super().__init__(compliance)
+#         self.symmetry = 'TIV'
+#         # self.set_compliance(Ev, Eh, PRv, PRhh, Gv)
+#         # self.get_stiffness()
+#         # C = self.stiffness.tensor
+#         # self.PRhv = - (C[0, 2]*(C[0, 1] - C[0, 0])) / (C[0, 0] * C[2, 2] - C[0, 2]**2)
+#         # self.Gv = Gv
+#         # self.GvHuber = np.sqrt(Ev * Eh) / (2 * (1 + np.sqrt(PRv * self.PRhv)))
+
+    @classmethod
+    def TIV_from_moduli(cls,
+                        Ev=TIV_ROCK['Ev'],
+                        Eh=TIV_ROCK['Eh'],
+                        PRv=TIV_ROCK['PRv'],
+                        PRhh=TIV_ROCK['PRhh'],
+                        Gv=TIV_ROCK['Gv'],
+                        dip=FormationDip()):
+
+        c = np.zeros((6, 6), dtype=np.float64)
         c[0, 0], c[0, 1], c[0, 2] = 1 / Eh, -PRhh / Eh, -PRv / Ev
         c[1, 0], c[1, 1], c[1, 2] = -PRhh / Eh, 1 / Eh, -PRv / Ev
         c[2, 0], c[2, 1], c[2, 2] = -PRv / Ev, -PRv / Ev, 1 / Ev
@@ -119,35 +144,46 @@ class TIVRock(Rock):
         c[4, 4] = 1 / Gv
         c[5, 5] = 2 * (1 + PRhh) / Eh
 
+        comp = Compliance(tensor=c)
 
-class ORTRock(Rock):
-    def __init__(self,
-                 Ex=ORT_ROCK['Ex'],
-                 Ey=ORT_ROCK['Ey'],
-                 Ez=ORT_ROCK['Ez'],
-                 PRyx=ORT_ROCK['PRyx'],
-                 PRzx=ORT_ROCK['PRzx'],
-                 PRzy=ORT_ROCK['PRzy'],
-                 Gyz=ORT_ROCK['Gyz'],
-                 Gxz=ORT_ROCK['Gxz'],
-                 Gxy=ORT_ROCK['Gxy']):
-        super().__init__()
-        self.symmetry = 'ORT'
-        self.set_compliance(Ex, Ey, Ez, PRyx, PRzx, PRzy, Gyz, Gxz, Gxy)
-        self.get_stiffness()
-        #  :todo: add Huber approx check
+        return cls(comp, dip)
 
-    def set_compliance(self, Ex, Ey, Ez, PRyx, PRzx, PRzy, Gyz, Gxz, Gxy):
-        c = self.compliance.tensor
-        c[0, 0], c[0, 1], c[0, 2] = 1 / Ex, -PRyx / Ey, -PRzx / Ez
-        c[1, 0], c[1, 1], c[1, 2] = -PRyx / Ex, 1 / Ey, -PRzy / Ez
-        c[2, 0], c[2, 1], c[2, 2] = -PRzx / Ex, -PRzy / Ey, 1 / Ez
-        c[3, 3] = 1 / Gyz
-        c[4, 4] = 1 / Gxz
-        c[5, 5] = 1 / Gxy
+
+# class ORTRock(Rock):
+#     def __init__(self,
+#                  Ex=ORT_ROCK['Ex'],
+#                  Ey=ORT_ROCK['Ey'],
+#                  Ez=ORT_ROCK['Ez'],
+#                  PRyx=ORT_ROCK['PRyx'],
+#                  PRzx=ORT_ROCK['PRzx'],
+#                  PRzy=ORT_ROCK['PRzy'],
+#                  Gyz=ORT_ROCK['Gyz'],
+#                  Gxz=ORT_ROCK['Gxz'],
+#                  Gxy=ORT_ROCK['Gxy']):
+#         super().__init__()
+#         self.symmetry = 'ORT'
+#         self.set_compliance(Ex, Ey, Ez, PRyx, PRzx, PRzy, Gyz, Gxz, Gxy)
+#         self.get_stiffness()
+#         #  :todo: add Huber approx check
+#
+#     def set_compliance(self, Ex, Ey, Ez, PRyx, PRzx, PRzy, Gyz, Gxz, Gxy):
+#         c = self.compliance.tensor
+#         c[0, 0], c[0, 1], c[0, 2] = 1 / Ex, -PRyx / Ey, -PRzx / Ez
+#         c[1, 0], c[1, 1], c[1, 2] = -PRyx / Ex, 1 / Ey, -PRzy / Ez
+#         c[2, 0], c[2, 1], c[2, 2] = -PRzx / Ex, -PRzy / Ey, 1 / Ez
+#         c[3, 3] = 1 / Gyz
+#         c[4, 4] = 1 / Gxz
+#         c[5, 5] = 1 / Gxy
 
 
 if __name__ == '__main__':
-    fd = FormationDip(dip=45, dir=45)
-    print(f'str : {fd!s}')
-    print(f'repr: {fd!r}')
+    dip = FormationDip(dip=45, dir=45)
+    print(f'str : {dip!s}')
+    print(f'repr: {dip!r}')
+
+    iso = Rock.ISO_from_moduli(**ISO_ROCK, dip=dip)
+    # iso = Rock.ISO_from_moduli()
+    print(iso)
+    tiv = Rock.TIV_from_moduli(**TIV_ROCK, dip=dip)
+    print(tiv)
+
