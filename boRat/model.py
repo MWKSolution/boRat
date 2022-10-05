@@ -93,23 +93,24 @@ class BoreholeModel:
 
 if __name__ == '__main__':
 
-    stress = Stress.from_PCS(SH=20, Sh=10, Sv=30, SHazi=10)
+    stress = Stress.from_PCS(SH=20, Sh=10, Sv=30, SHazi=15)
 
     ISO_ROCK = dict(E=30.14, PR=0.079)
     TIV_ROCK = dict(Ev=15.42, Eh=31.17, PRv=0.32, PRhh=0.079, Gv=7.05)
 
-    dip = FormationDip(dip=10, dir=20)
+    dip = FormationDip(dip=35, dir=55)
 
-    iso = Rock.ISO_from_moduli(**ISO_ROCK, dip=dip)
-    # tiv = Rock.TIV_from_moduli(**TIV_ROCK, dip=dip)
+    rock = Rock.ISO_from_moduli(**ISO_ROCK, dip=dip)
+    # rock = Rock.TIV_from_moduli(**TIV_ROCK, dip=dip)
 
-    wbo = Wellbore(hazi=30, hdev=40, Pw=5)
+    wbo = Wellbore(hazi=25, hdev=45, Pw=5)
 
-    model = BoreholeModel(stress, iso, wbo, hoop_model='kirsch')
-    model.show_all()
+    model = BoreholeModel(stress, rock, wbo, hoop_model='kirsch')
+    # model.show_all()
 
-    modelBM = BoreholeModel(stress, iso, wbo, hoop_model='beltrami-michell')
+    modelBM = BoreholeModel(stress, rock, wbo, hoop_model='beltrami-michell')
     model.compare_stresses_with(modelBM)
+    # modelBM.show_all()
 
 
 

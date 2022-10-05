@@ -49,18 +49,16 @@ class Rock:
         return np.linalg.inv(self.compliance.tensor)
 
     def rot_PSC_to_NEV(self, dip, dir):
-        rotation = Rot.from_euler('yzx', [-dip, dir, 0], degrees=True)
+        rotation = Rot.from_euler('ZY', [dir, -dip], degrees=True)
         self.rot_inplace(rotation)
 
     def rot_NEV_to_TOH(self, hazi, hdev):
-        rotation = Rot.from_euler('yxz', [hdev, -hazi, 0], degrees=True)
+        rotation = Rot.from_euler('YZ', [-hdev, -hazi], degrees=True)
         return self.rot(rotation)
 
     def rot(self, rotation):
         """Rotate compliance tensor with given angles and get stiffness tensor."""
         rotated = Rock(self.compliance.rot(rotation))
-        # rotated.compliance = self.compliance.rot(rotation)
-        # rotated.get_stiffness()
         rotated.symmetry = self.symmetry
         return rotated
 

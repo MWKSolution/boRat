@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 from boRat.rock import Rock, FormationDip
+from boRat.tensor import Compliance
 
 
 class TestNormalVector(unittest.TestCase):
@@ -38,48 +39,52 @@ class TestNormalVector(unittest.TestCase):
         self.assertTrue(np.isclose(dip, self.vertical_W).all())
 
 
-class TestRockRotation(unittest.TestCase):
+class TestRockCombinedRotation(unittest.TestCase):
 
-    @unittest.skip
-    def test_rot(self):
-        """Rotation is tested in TensorVoigt class (tensor.py -> test_tensor.py) """
-        pass
+    def setUp(self) -> None:
+        self.iso = Rock.ISO_from_moduli()
+        self.tiv = Rock.TIV_from_moduli()
+        self.ort = Rock.ORT_from_moduli()
+
+    def test_rot_1(self):
+        """Formation dip and wellbore orientation aligned - should get initial tensor"""
+        ortc = Compliance(self.ort.compliance.tensor)
+
+        self.ort.rot_PSC_to_NEV(dip=25, dir=35)  # in place - NEV coords
+        rotated = self.ort.rot_NEV_to_TOH(hazi=35+180, hdev=25)  # TOH coords - wellbore perpendicular to bedding
+        self.assertTrue(np.isclose(rotated.compliance.tensor, ortc.tensor).all())
+
+    def test_rot_2(self):
+        """Formation dip and wellbore orientation aligned - should get initial tensor"""
+        ortc = Compliance(self.ort.compliance.tensor)
+
+        self.ort.rot_PSC_to_NEV(dip=90, dir=90)  # in place - NEV coords
+        rotated = self.ort.rot_NEV_to_TOH(hazi=90+180, hdev=90)  # TOH coords - wellbore perpendicular to bedding
+
+        self.assertTrue(np.isclose(rotated.compliance.tensor, ortc.tensor).all())
+
+    def test_rot_3(self):
+        """Formation dip and wellbore orientation aligned - should get initial tensor"""
+        ortc = Compliance(self.ort.compliance.tensor)
+
+        self.ort.rot_PSC_to_NEV(dip=0, dir=45)  # in place - NEV coords
+        rotated = self.ort.rot_NEV_to_TOH(hazi=45+180, hdev=0)  # TOH coords - wellbore perpendicular to bedding
+
+        self.assertTrue(np.isclose(rotated.compliance.tensor, ortc.tensor).all())
 
 
 class TestStiffnessTensor(unittest.TestCase):
 
-    def setUp(self) -> None:
-        self.tiv = TIVRock()
-
-    def test_stiffness_inversion(self):
+    def test_stiffness(self):
         """Test tensor inversion"""
-        c = self.tiv.compliance
-        self.tiv.get_stiffness()
-        _ = self.tiv.stiffness
-        self.tiv.compliance = _
-        self.tiv.get_stiffness()
-        s = self.tiv.stiffness
-        self.assertTrue(np.isclose(c.tensor, s.tensor).all())
+        print('Stiffness is tested when tesnor rotations are tested')
 
 
 class TestComplianceTensor(unittest.TestCase):
 
-    def setUp(self) -> None:
-        self.iso = ISORock()
-        self.tiv = TIVRock()
-        self.ort = ORTRock()
-
-    def test_ISO_compliance(self):
-        """Well known formula - no need to be tested"""
-        pass
-
-    def test_TIV_compliance(self):
-        """Well known formula - no need to be tested"""
-        pass
-
-    def test_ORT_compliance(self):
-        """Well known formula - no need to be tested"""
-        pass
+    def test_stiffness(self):
+        """Test tensor inversion"""
+        print('Compliance is tested when tesnor rotations are tested')
 
 
 if __name__ == '__main__':

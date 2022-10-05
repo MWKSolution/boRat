@@ -17,7 +17,7 @@ class HoopStress:
 
 class BeltramiMichell(HoopStress):
     def __init__(self, rock, far_field_stress, Pw):
-        __log__.info('-------------------- Beltrami-Michell --------------------')
+        # __log__.info('-------------------- Beltrami-Michell --------------------')
         super().__init__(rock, far_field_stress, Pw)
         self.compliance = rock.compliance
         self.beta = self.get_reduced_strain_coeff(self.compliance)
@@ -25,7 +25,8 @@ class BeltramiMichell(HoopStress):
         self.a = self.get_polynomial_coeffs(self.beta.tensor)
         self.all_roots = polyroots(self.a)
         self.roots = self.get_conjugate_roots()
-        self.mi1,  self.mi2, self.mi3 = self.roots[2], self.roots[0], self.roots[1]
+        # :todo: sprawdzic to!
+        self.mi1,  self.mi2, self.mi3 = self.roots[0], self.roots[1], self.roots[2]
         # self.mi1 = 0 + 1j
         # self.mi2 = 0 + 1j
         # self.mi3 = 0 + 1j
@@ -34,13 +35,13 @@ class BeltramiMichell(HoopStress):
         self.la3 = - (self.I3(self.mi3) / self.I4(self.mi3))
 
         # __log__.debug(f'BM: compliance: \n{self.compliance!s}')
-        __log__.debug(f'BM: beta: \n{self.beta!s}')
-        __log__.debug('BM: a: ' + ' '.join([f'\n{a}' for a in self.a]))
-        __log__.debug('BM: all roots:' + ''.join([f'\n{r}' for r in self.all_roots]))
-        # __log__.info('BM: conjugate roots:' + ''.join([f'\n{r}' for r in self.roots]))
+        # __log__.debug(f'BM: beta: \n{self.beta!s}')
+        # __log__.debug('BM: a: ' + ' '.join([f'\n{a}' for a in self.a]))
+        __log__.info('BM: all roots:' + ''.join([f'\n{r}' for r in self.all_roots]))
+        __log__.info('BM: conjugate roots:' + ''.join([f'\n{r}' for r in self.roots]))
         __log__.info(f'BM: mi1, mi2, mi3: \n{self.mi1}, \n{self.mi2}, \n{self.mi3}')
-        __log__.debug(f'BM: la1, la2, la3: \n{self.la1}, \n{self.la2}, \n{self.la3}')
-        __log__.info('-------------------- Beltrami-Michell --------------------')
+        # __log__.debug(f'BM: la1, la2, la3: \n{self.la1}, \n{self.la2}, \n{self.la3}')
+        # __log__.info('-------------------- Beltrami-Michell --------------------')
 
     def get_conjugate_roots(self):
         """Get only 3 conjugates"""
@@ -59,9 +60,9 @@ class BeltramiMichell(HoopStress):
                 a = t.tensor
                 beta.tensor[i, j] = a[i, j] - ((a[i, 2] * a[j, 2]) / a[2, 2])
         B11, B55 = beta.tensor[0, 0], beta.tensor[4, 4]
-        __log__.info(f'B11 = {B11:.4f}, B55 = {B55:.4f}')
-        if np.isclose(B11, B55):
-            __log__.warning('B11 == B55 !!!')
+        # __log__.info(f'B11 = {B11:.4f}, B55 = {B55:.4f}')
+        # if np.isclose(B11, B55):
+        #     __log__.warning('B11 == B55 !!!')
 
         return beta
 

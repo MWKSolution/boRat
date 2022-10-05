@@ -6,7 +6,6 @@ from boRat import stress
 class TestPCS(unittest.TestCase):
 
     def setUp(self) -> None:
-        # self.s = stress.Stress()
         self.s = stress.Stress.from_PCS(SH=1, Sh=2, Sv=3)
 
     def test_diagonal(self):
@@ -18,7 +17,6 @@ class TestPCS(unittest.TestCase):
 class TestPCStoNEV(unittest.TestCase):
 
     def setUp(self) -> None:
-        # self.s = stress.Stress()
         self.s = stress.Stress.from_PCS(SH=1, Sh=2, Sv=3)
 
     def test_SH_N(self):
@@ -49,9 +47,7 @@ class TestPCStoNEV(unittest.TestCase):
 class TestNEVtoTOH(unittest.TestCase):
 
     def setUp(self) -> None:
-        # self.s = stress.Stress()
         self.s = stress.Stress.from_PCS(SH=1, Sh=2, Sv=3, SHazi=0)
-        # self.s = self.nev.rot_PCS_to_NEV(SHazi=0)
 
     def test_horizontal_N(self):
         """SH N to horizontal N"""
@@ -78,12 +74,26 @@ class TestNEVtoTOH(unittest.TestCase):
         self.assertTrue(np.isclose(rot.stress, result).all())
 
 
+class TestCombinedRotations(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.pcs = stress.Stress.from_PCS(SH=1, Sh=2, Sv=3)
+
+    def test_rot1(self):
+        s = stress.Stress.from_PCS(SH=1, Sh=2, Sv=3, SHazi=45)
+        rotated = s.rot_NEV_to_TOH(hazi=45+180, hdev=0)
+        self.assertTrue(np.isclose(self.pcs.stress, rotated.stress).all())
+
+    def test_rot2(self):
+        s = stress.Stress.from_PCS(SH=1, Sh=2, Sv=3, SHazi=90)
+        rotated = s.rot_NEV_to_TOH(hazi=180+90, hdev=0)
+        self.assertTrue(np.isclose(self.pcs.stress, rotated.stress).all())
+
+
 class TestCart2cyl(unittest.TestCase):
 
     def setUp(self) -> None:
-        # self.s = stress.Stress()
         self.s = stress.Stress.from_PCS(SH=1, Sh=2, Sv=3, SHazi=0)
-        # self.s = self.nev.rot_PCS_to_NEV(SHazi=0)
 
     def test_theta_90(self):
         """Theta = 90 deg"""

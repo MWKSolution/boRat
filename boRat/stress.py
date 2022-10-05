@@ -20,11 +20,11 @@ class Stress:
         return cls(_stress, SHazi)
 
     def rot_PCS_to_NEV(self, SHazi=0.0):  # only SH azimuth, Sz always vertical !!!
-        rotation = Rot.from_euler('XYZ', [0, 0, -SHazi], degrees=True)
+        rotation = Rot.from_euler('YZ', [0, SHazi], degrees=True)
         self.rot_inplace(rotation)
 
     def rot_NEV_to_TOH(self, hazi=0, hdev=0):
-        rotation = Rot.from_euler('yxz', [hdev, -hazi, 0], degrees=True)
+        rotation = Rot.from_euler('YZ', [-hdev, -hazi], degrees=True)
         return self.rot(rotation)
 
     def rot(self, rotation=None):
