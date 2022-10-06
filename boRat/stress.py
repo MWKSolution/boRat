@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.spatial.transform import Rotation as Rot
 from boRat.config import tolerance as tol
+from boRat.config import __log__
 
 
 class Stress:
@@ -8,7 +9,8 @@ class Stress:
     def __init__(self, stress=np.zeros((3, 3), dtype=np.float64), SHazi=0.0):
         #  stress tensor
         self.stress = stress
-        self.rot_PCS_to_NEV(SHazi=SHazi)
+        if SHazi:
+            self.rot_PCS_to_NEV(SHazi=SHazi)
 
     @classmethod
     def from_PCS(cls, SH=0.0, Sh=0.0, Sv=0.0, SHazi=0.0):
@@ -17,6 +19,7 @@ class Stress:
         X is in the North direction, Y is in East direction,3 Z is down.
         SHAzi gives azimuth of X axis."""
         _stress = np.diag(np.array([SH, Sh, Sv], dtype=np.float64))
+        __log__.debug(f'PCS stress: SHazi={SHazi}\n{_stress}')
         return cls(_stress, SHazi)
 
     def rot_PCS_to_NEV(self, SHazi=0.0):  # only SH azimuth, Sz always vertical !!!
@@ -24,8 +27,11 @@ class Stress:
         self.rot_inplace(rotation)
 
     def rot_NEV_to_TOH(self, hazi=0, hdev=0):
+        __log__.debug(f'NEV stress:\n{self.stress}')
         rotation = Rot.from_euler('YZ', [-hdev, -hazi], degrees=True)
-        return self.rot(rotation)
+        rotated = self.rot(rotation)
+        __log__.debug(f'TOH stress:\n{rotated}')
+        return rotated
 
     def rot(self, rotation=None):
         """Rotate 3x3 stress tensor using given angles.

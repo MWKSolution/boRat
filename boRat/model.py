@@ -94,7 +94,7 @@ class BoreholeModel:
 
 if __name__ == '__main__':
 
-    stress = Stress.from_PCS(SH=20, Sh=10, Sv=30, SHazi=0)
+    stress = Stress.from_PCS(SH=20, Sh=10, Sv=30, SHazi=25)
 
     ISO_ROCK = dict(E=30.14, PR=0.079)
     TIV_ROCK = dict(Ev=15.42, Eh=31.17, PRv=0.32, PRhh=0.079, Gv=8.05)
@@ -102,18 +102,18 @@ if __name__ == '__main__':
 
     dip = FormationDip(dip=30, dir=30)
 
-    # rock = Rock.ISO_from_moduli(**ISO_ROCK, dip=dip)
-    rock = Rock.TIV_from_moduli(**TIV_ROCK, dip=dip)
-    # rock = Rock.ORT_from_moduli(**ORT_ROCK, dip=dip)
-
-    wbo = Wellbore(hazi=0, hdev=90, Pw=5)
-
-    # model = BoreholeModel(stress, rock, wbo, hoop_model='kirsch')
-    # model.show_all()
-
-    modelBM = BoreholeModel(stress, rock, wbo, hoop_model='beltrami-michell', clean=False)
-    # model.compare_stresses_with(modelBM)
-    modelBM.show_stress()
+    # # rock = Rock.ISO_from_moduli(**ISO_ROCK, dip=dip)
+    # rock = Rock.TIV_from_moduli(**TIV_ROCK, dip=dip)
+    # # rock = Rock.ORT_from_moduli(**ORT_ROCK, dip=dip)
+    #
+    # wbo = Wellbore(hazi=0, hdev=90, Pw=5)
+    #
+    # # model = BoreholeModel(stress, rock, wbo, hoop_model='kirsch')
+    # # model.show_all()
+    #
+    # modelBM = BoreholeModel(stress, rock, wbo, hoop_model='beltrami-michell', clean=False)
+    # # model.compare_stresses_with(modelBM)
+    # modelBM.show_stress()
 
 
 

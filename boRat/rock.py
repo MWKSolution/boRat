@@ -1,6 +1,7 @@
 import numpy as np
 from boRat.tensor import Compliance, Stiffness
 from scipy.spatial.transform import Rotation as Rot
+from boRat.config import __log__
 
 # :todo: get typical rocks...
 ISO_ROCK = dict(E=30.14, PR=0.079)
@@ -16,6 +17,7 @@ class FormationDip:
         self.dip = dip  # formation dip
         self.dir = dir  # dip direction
         self.vector = self.get_normal_vector_NEV()
+        __log__.debug(f'Formation dip-> dip:{dip} dir:{dir} degs')
 
     def get_normal_vector_NEV(self):
         """Vector perpendicular to bedding. Since for flat bedding it is pointing down (Z axis direction) it has to be rotated with -dip value!"""
@@ -41,8 +43,6 @@ class Rock:
         self.compliance = compliance
         self.rot_PSC_to_NEV(dip.dip, dip.dir)
         self.stiffness = Stiffness(self.get_stiffness())
-        print(self.compliance)
-        print(self.stiffness)
         self.dip = dip
         self.symmetry = symmetry
 
@@ -135,7 +135,7 @@ class Rock:
 
 
 if __name__ == '__main__':
-    dip = FormationDip(dip=0, dir=0)
+    dip = FormationDip(dip=5, dir=5)
     print(f'str : {dip!s}')
     print(f'repr: {dip!r}')
 
