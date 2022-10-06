@@ -1,8 +1,9 @@
 import numpy as np
 from numpy.polynomial.polynomial import polyroots
+# from laguerre import zroots
 from boRat.tensor import TensorVoigt
 from boRat.stress import Stress
-from boRat.config import __log__
+from boRat.config import __log__, tolerance
 
 
 class HoopStress:
@@ -20,16 +21,13 @@ class BeltramiMichell(HoopStress):
         # __log__.info('-------------------- Beltrami-Michell --------------------')
         super().__init__(rock, far_field_stress, Pw)
         self.compliance = rock.compliance
-        self.beta = self.get_reduced_strain_coeff(self.compliance)
-        self.beta.clean()
-        self.a = self.get_polynomial_coeffs(self.beta.tensor)
+        self.beta = self.get_reduced_strain_coeff(self.compliance.tensor)
+        # self.beta.clean()
+        self.a = self.get_polynomial_coeffs(self.beta)
         self.all_roots = polyroots(self.a)
         self.roots = self.get_conjugate_roots()
         # :todo: sprawdzic to!
-        self.mi1,  self.mi2, self.mi3 = self.roots[0], self.roots[1], self.roots[2]
-        # self.mi1 = 0 + 1j
-        # self.mi2 = 0 + 1j
-        # self.mi3 = 0 + 1j
+        self.mi1,  self.mi2, self.mi3 = self.roots[2], self.roots[0], self.roots[1]
         self.la1 = - (self.I3(self.mi1) / self.I2(self.mi1))
         self.la2 = - (self.I3(self.mi2) / self.I2(self.mi2))
         self.la3 = - (self.I3(self.mi3) / self.I4(self.mi3))
@@ -37,9 +35,9 @@ class BeltramiMichell(HoopStress):
         # __log__.debug(f'BM: compliance: \n{self.compliance!s}')
         # __log__.debug(f'BM: beta: \n{self.beta!s}')
         # __log__.debug('BM: a: ' + ' '.join([f'\n{a}' for a in self.a]))
-        __log__.info('BM: all roots:' + ''.join([f'\n{r}' for r in self.all_roots]))
-        __log__.info('BM: conjugate roots:' + ''.join([f'\n{r}' for r in self.roots]))
-        __log__.info(f'BM: mi1, mi2, mi3: \n{self.mi1}, \n{self.mi2}, \n{self.mi3}')
+        # __log__.info('BM: all roots:' + ''.join([f'\n{r}' for r in self.all_roots]))
+        # __log__.info('BM: conjugate roots:' + ''.join([f'\n{r}' for r in self.roots]))
+        # __log__.info(f'BM: mi1, mi2, mi3: \n{self.mi1}, \n{self.mi2}, \n{self.mi3}')
         # __log__.debug(f'BM: la1, la2, la3: \n{self.la1}, \n{self.la2}, \n{self.la3}')
         # __log__.info('-------------------- Beltrami-Michell --------------------')
 
@@ -52,14 +50,13 @@ class BeltramiMichell(HoopStress):
         return con_roots
 
     @staticmethod
-    def get_reduced_strain_coeff(t):
+    def get_reduced_strain_coeff(a):
         """Reduced elastic constants"""
-        beta = TensorVoigt()
+        beta = np.zeros((6, 6), dtype=np.float64)
         for i in range(6):
             for j in range(6):
-                a = t.tensor
-                beta.tensor[i, j] = a[i, j] - ((a[i, 2] * a[j, 2]) / a[2, 2])
-        B11, B55 = beta.tensor[0, 0], beta.tensor[4, 4]
+                beta[i, j] = a[i, j] - ((a[i, 2] * a[j, 2]) / a[2, 2])
+        # B11, B55 = beta.tensor[0, 0], beta.tensor[4, 4]
         # __log__.info(f'B11 = {B11:.4f}, B55 = {B55:.4f}')
         # if np.isclose(B11, B55):
         #     __log__.warning('B11 == B55 !!!')
@@ -79,18 +76,21 @@ class BeltramiMichell(HoopStress):
                2 * b[1, 3] * (b[0, 3] + b[4, 5]) - (b[1, 4] + b[3, 5]) ** 2 + 0j
         a[1] = -2 * b[1, 1] * b[3, 4] - 2 * b[1, 5] * b[3, 3] + 2 * b[1, 3] * (b[1, 4] + b[3, 5]) + 0j
         a[0] = b[1, 1] * b[3, 3] - b[1, 3] * b[1, 3] + 0j
+
+        # a[np.abs(a) < tolerance] = 0.0
+
         return a
 
     def I4(self, x):
-        b = self.beta.tensor
+        b = self.beta
         return b[0, 0] * (x ** 4) - 2 * b[0, 5] * (x ** 3) + (2 * b[0, 1] + b[5, 5]) * (x ** 2) - 2 * b[1, 5] * x + b[1, 1]
 
     def I3(self, x):
-        b = self.beta.tensor
+        b = self.beta
         return b[0, 4] * (x ** 3) - (b[0, 3] + b[4, 5]) * (x ** 2) + (b[1, 4] + b[3, 5]) * x - b[1, 3]
 
     def I2(self, x):
-        b = self.beta.tensor
+        b = self.beta
         return b[4, 4] * (x ** 2) - 2 * b[3, 4] * x + b[3, 3]
 
     # @timer
@@ -103,8 +103,8 @@ class BeltramiMichell(HoopStress):
         mi1, mi2, mi3 = self.mi1, self.mi2, self.mi3
         la1, la2, la3 = self.la1, self.la2, self.la3
 
-        D = ((p - s[0, 0]) * cost - s[0, 1] * sint) + (-(p - s[0, 0]) * sint - s[0, 1] * cost) * 1j
-        E = (-(p - s[1, 1]) * sint + s[0, 1] * cost) + (-(p - s[1, 1]) * cost - s[0, 1] * cost) * 1j
+        D = ((p - s[0, 0]) * cost - s[0, 1] * sint) - ((p - s[0, 0]) * sint + s[0, 1] * cost) * 1j
+        E = (-(p - s[1, 1]) * sint + s[0, 1] * cost) - ((p - s[1, 1]) * cost + s[0, 1] * sint) * 1j
         F = (-s[2, 0] * cost - s[2, 1] * sint) + (s[2, 0] * sint - s[2, 1] * cost) * 1j
         _x = mi2 - mi1 + la2 * la3 * (mi1 - mi3) + la1 * la3 * (mi3 - mi2)
         G1 = (mi1 * cost - sint) * _x
@@ -147,8 +147,7 @@ class Kirsch(HoopStress):
         s = self.far_field_stress.stress
         sig_rr = self.Pw
         sig_tt = s[0, 0] + s[1, 1] - 2 * (s[0, 0] - s[1, 1]) * np.cos(2 * t) - 4 * s[0, 1] * np.sin(2 * t) - self.Pw
-        # sig_tt = s[0, 0] + s[1, 1] - 2 * (s[0, 0] - s[1, 1]) * np.cos(2 * t) - 4 * s[0, 1] * np.sin(2 * t)
-        sig_zz = s[2, 2] - self.PR * (2 * ((s[0, 0] - s[1, 1]) * np.cos(2 * t)) + 4 * s[0, 1] * np.sin(2 * t))
+        sig_zz = s[2, 2] - self.PR * ((2 * (s[0, 0] - s[1, 1]) * np.cos(2 * t)) + (4 * s[0, 1] * np.sin(2 * t)))
         tau_rt = 0
         tau_rz = 0
         tau_tz = 2 * (s[1, 2] * np.cos(t) - s[0, 2] * np.sin(t))
@@ -157,4 +156,5 @@ class Kirsch(HoopStress):
         hoop_stress.stress = np.array([[sig_rr, tau_rt, tau_rz],
                                        [tau_rt, sig_tt, tau_tz],
                                        [tau_rz, tau_tz, sig_zz]])
+        # hoop_stress_cart = hoop_stress.cart2cyl(-theta)
         return hoop_stress

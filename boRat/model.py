@@ -22,14 +22,14 @@ class BoreholeModel:
         self.rockNEV = rock
         self.wbo = wbo
         self.angle = self.get_angle(self.wbo.vector, self.rockNEV.dip.vector)
-        self.stressNEV.clean()
-        self.rockNEV.clean()
+        # self.stressNEV.clean()
+        # self.rockNEV.clean()
 
         self.stressTOH = self.stressNEV.rot_NEV_to_TOH(self.wbo.orien.hazi, self.wbo.orien.hdev)
-        self.stressTOH.clean()
+        # self.stressTOH.clean()
 
         self.rockTOH = self.rockNEV.rot_NEV_to_TOH(self.wbo.orien.hazi, self.wbo.orien.hdev)
-        self.rockTOH.clean()
+        # self.rockTOH.clean()
 
         # __log__.info('-------------------- model description start --------------------')
         # __log__.info(f'Principal stresses [Mpa]: {self.stress_pcs!s}')
@@ -93,24 +93,24 @@ class BoreholeModel:
 
 if __name__ == '__main__':
 
-    stress = Stress.from_PCS(SH=20, Sh=10, Sv=30, SHazi=15)
+    stress = Stress.from_PCS(SH=20, Sh=10, Sv=30, SHazi=0)
 
     ISO_ROCK = dict(E=30.14, PR=0.079)
     TIV_ROCK = dict(Ev=15.42, Eh=31.17, PRv=0.32, PRhh=0.079, Gv=7.05)
 
-    dip = FormationDip(dip=35, dir=55)
+    dip = FormationDip(dip=0, dir=0)
 
-    rock = Rock.ISO_from_moduli(**ISO_ROCK, dip=dip)
-    # rock = Rock.TIV_from_moduli(**TIV_ROCK, dip=dip)
+    #rock = Rock.ISO_from_moduli(**ISO_ROCK, dip=dip)
+    rock = Rock.TIV_from_moduli(**TIV_ROCK, dip=dip)
 
-    wbo = Wellbore(hazi=25, hdev=45, Pw=5)
+    wbo = Wellbore(hazi=0, hdev=0, Pw=5)
 
-    model = BoreholeModel(stress, rock, wbo, hoop_model='kirsch')
+    # model = BoreholeModel(stress, rock, wbo, hoop_model='kirsch')
     # model.show_all()
 
     modelBM = BoreholeModel(stress, rock, wbo, hoop_model='beltrami-michell')
-    model.compare_stresses_with(modelBM)
-    # modelBM.show_all()
+    # model.compare_stresses_with(modelBM)
+    modelBM.show_stress()
 
 
 
