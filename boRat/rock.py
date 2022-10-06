@@ -41,6 +41,8 @@ class Rock:
         self.compliance = compliance
         self.rot_PSC_to_NEV(dip.dip, dip.dir)
         self.stiffness = Stiffness(self.get_stiffness())
+        print(self.compliance)
+        print(self.stiffness)
         self.dip = dip
         self.symmetry = symmetry
 

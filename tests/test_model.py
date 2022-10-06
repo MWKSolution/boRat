@@ -5,8 +5,7 @@ from boRat import model, stress, rock, wellbore
 
 class TestBeltramiMichell(unittest.TestCase):
     def setUp(self) -> None:
-        self.stress = stress.Stress.from_PCS(SH=20, Sh=10, Sv=30, SHazi=0)
-
+        self.stress = stress.Stress.from_PCS(SH=20, Sh=10, Sv=30, SHazi=15)
 
     def test_model(self):
 
@@ -22,9 +21,8 @@ class TestBeltramiMichell(unittest.TestCase):
                         print(f'Test for: dip {p}, dir {r}, azi {h}, dev {d} ', end='')
                         for theta in range(0, 180, 20):
                             hoopBM = self.modelBM.get_hoop_stress(theta)
-                            hoopBM.clean()
                             hoopK = self.modelK.get_hoop_stress(theta)
-                            self.assertTrue(np.isclose(hoopBM.stress, hoopK.stress, atol=1e-2).all())
+                            self.assertTrue(np.isclose(hoopBM.stress, hoopK.stress, atol=1e-3).all())
                             print('.', end='')
                         print('OK')
 

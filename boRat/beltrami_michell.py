@@ -7,7 +7,7 @@ from boRat.config import __log__, tolerance
 
 
 class HoopStress:
-    def __init__(self, rock, far_field_stress, Pw):
+    def __init__(self, rock, far_field_stress, Pw, clean=True):
         self.far_field_stress = far_field_stress
         self.Pw = Pw
 
@@ -17,13 +17,12 @@ class HoopStress:
 
 
 class BeltramiMichell(HoopStress):
-    def __init__(self, rock, far_field_stress, Pw):
+    def __init__(self, rock, far_field_stress, Pw, clean=True):
         # __log__.info('-------------------- Beltrami-Michell --------------------')
         super().__init__(rock, far_field_stress, Pw)
         self.compliance = rock.compliance
-        self.beta = self.get_reduced_strain_coeff(self.compliance.tensor)
-        # self.beta.clean()
-        self.a = self.get_polynomial_coeffs(self.beta)
+        self.beta = self.get_reduced_strain_coeff(self.compliance.tensor, clean=clean)
+        self.a = self.get_polynomial_coeffs(self.beta, clean=clean)
         self.all_roots = polyroots(self.a)
         self.roots = self.get_conjugate_roots()
         # :todo: sprawdzic to!
@@ -50,7 +49,7 @@ class BeltramiMichell(HoopStress):
         return con_roots
 
     @staticmethod
-    def get_reduced_strain_coeff(a):
+    def get_reduced_strain_coeff(a, clean=True):
         """Reduced elastic constants"""
         beta = np.zeros((6, 6), dtype=np.float64)
         for i in range(6):
@@ -60,11 +59,12 @@ class BeltramiMichell(HoopStress):
         # __log__.info(f'B11 = {B11:.4f}, B55 = {B55:.4f}')
         # if np.isclose(B11, B55):
         #     __log__.warning('B11 == B55 !!!')
-
+        if clean:
+            beta[np.abs(beta) < tolerance] = 0.0
         return beta
 
     @staticmethod
-    def get_polynomial_coeffs(b):
+    def get_polynomial_coeffs(b, clean=True):
         a = np.zeros(7, dtype=np.complex64)
         a[6] = b[0, 0] * b[4, 4] - b[0, 4] * b[0, 4] + 0j
         a[5] = 2 * b[0, 4] * (b[0, 3] + b[4, 5]) - 2 * (b[0, 5] * b[4, 4] + b[0, 0] * b[3, 4]) + 0j
@@ -77,8 +77,8 @@ class BeltramiMichell(HoopStress):
         a[1] = -2 * b[1, 1] * b[3, 4] - 2 * b[1, 5] * b[3, 3] + 2 * b[1, 3] * (b[1, 4] + b[3, 5]) + 0j
         a[0] = b[1, 1] * b[3, 3] - b[1, 3] * b[1, 3] + 0j
 
-        # a[np.abs(a) < tolerance] = 0.0
-
+        if clean:
+            a[np.abs(a) < tolerance] = 0.0
         return a
 
     def I4(self, x):
@@ -105,7 +105,8 @@ class BeltramiMichell(HoopStress):
 
         D = ((p - s[0, 0]) * cost - s[0, 1] * sint) - ((p - s[0, 0]) * sint + s[0, 1] * cost) * 1j
         E = (-(p - s[1, 1]) * sint + s[0, 1] * cost) - ((p - s[1, 1]) * cost + s[0, 1] * sint) * 1j
-        F = (-s[2, 0] * cost - s[2, 1] * sint) + (s[2, 0] * sint - s[2, 1] * cost) * 1j
+        F = (-s[0, 2] * cost - s[1, 2] * sint) + (s[0, 2] * sint - s[1, 2] * cost) * 1j
+
         _x = mi2 - mi1 + la2 * la3 * (mi1 - mi3) + la1 * la3 * (mi3 - mi2)
         G1 = (mi1 * cost - sint) * _x
         G2 = (mi2 * cost - sint) * _x
@@ -115,19 +116,18 @@ class BeltramiMichell(HoopStress):
         fi2 = ((D * (1 - (la1 * la3))) + (E * ((la1 * la3 * mi3) - mi1)) + (F * la3 * (mi1 - mi3))) / (2 * G2)
         fi3 = ((D * (la1 - la2)) + (E * ((mi1 * la2) - (mi2 * la1))) + (F * (mi2 - mi1))) / (2 * G3)
 
-        dsig_xx = 2 * (((mi1 ** 2) * fi1) + ((mi2 ** 2) * fi2) + (la3 * (mi3 ** 2) * fi3)).real
-        dsig_yy = 2 * (fi1 + fi2 + (la3 * fi3)).real
-        dtau_xy = -2 * ((mi1 * fi1) + (mi2 * fi2) + (la3 * mi3 * fi3)).real
-        dtau_xz = 2 * ((la1 * mi1 * fi1) + (la2 * mi2 * fi2) + (mi3 * fi3)).real
-        dtau_yz = -2 * ((la1 * fi1) + (la2 * fi2) + fi3).real
+        dsig_xx = 2 * np.real(((mi1 ** 2) * fi1) + ((mi2 ** 2) * fi2) + (la3 * (mi3 ** 2) * fi3))
+        dsig_yy = 2 * np.real(fi1 + fi2 + (la3 * fi3))
+        dtau_xy = -2 * np.real((mi1 * fi1) + (mi2 * fi2) + (la3 * mi3 * fi3))
+        dtau_xz = 2 * np.real((la1 * mi1 * fi1) + (la2 * mi2 * fi2) + (mi3 * fi3))
+        dtau_yz = -2 * np.real((la1 * fi1) + (la2 * fi2) + fi3)
         dsig_zz = -((c[2, 0] * dsig_xx + c[2, 1] * dsig_yy + c[2, 3] * dtau_yz + c[2, 4] * dtau_xz + c[
             2, 5] * dtau_xy) / c[2, 2])
 
         hoop_stress = Stress()
-        dh = Stress()
-        dh.stress = np.array([[dsig_xx, dtau_xy, dtau_xz],
+        dh = Stress(np.array([[dsig_xx, dtau_xy, dtau_xz],
                               [dtau_xy, dsig_yy, dtau_yz],
-                              [dtau_xz, dtau_yz, dsig_zz]])
+                              [dtau_xz, dtau_yz, dsig_zz]], dtype=np.float64))
 
         hoop_stress.stress = np.add(s, dh.stress)
         hoop_stress_cyl = hoop_stress.cart2cyl(theta)
@@ -137,7 +137,7 @@ class BeltramiMichell(HoopStress):
 
 
 class Kirsch(HoopStress):
-    def __init__(self, rock, far_field_stress, Pw):
+    def __init__(self, rock, far_field_stress, Pw, clean=True):
         super().__init__(rock, far_field_stress, Pw)
         c = rock.compliance.tensor
         self.PR = -c[0, 1] / c[0, 0]  # :todo: averaging of PR fot non ISO ???
