@@ -1,5 +1,7 @@
 import numpy as np
 from numpy.polynomial.polynomial import polyroots
+from numpy import poly1d, polyder
+from scipy.optimize import newton
 # from laguerre import zroots
 from boRat.tensor import TensorVoigt
 from boRat.stress import Stress
@@ -18,35 +20,46 @@ class HoopStress:
 
 class BeltramiMichell(HoopStress):
     def __init__(self, rock, far_field_stress, Pw, clean=True):
-        # __log__.info('-------------------- Beltrami-Michell --------------------')
+        __log__.info('-------------------- Beltrami-Michell --------------------')
         super().__init__(rock, far_field_stress, Pw)
         self.compliance = rock.compliance
         self.beta = self.get_reduced_strain_coeff(self.compliance.tensor, clean=clean)
         self.a = self.get_polynomial_coeffs(self.beta, clean=clean)
         self.all_roots = polyroots(self.a)
+        self.p_roots = self.polish_roots(self.all_roots, self.a)
+
         self.roots = self.get_conjugate_roots()
         # :todo: sprawdzic to!
-        self.mi1,  self.mi2, self.mi3 = self.roots[2], self.roots[0], self.roots[1]
+        self.mi1,  self.mi2, self.mi3 = self.roots[1], self.roots[2], self.roots[0]
         self.la1 = - (self.I3(self.mi1) / self.I2(self.mi1))
         self.la2 = - (self.I3(self.mi2) / self.I2(self.mi2))
         self.la3 = - (self.I3(self.mi3) / self.I4(self.mi3))
 
-        # __log__.debug(f'BM: compliance: \n{self.compliance!s}')
-        # __log__.debug(f'BM: beta: \n{self.beta!s}')
-        # __log__.debug('BM: a: ' + ' '.join([f'\n{a}' for a in self.a]))
-        # __log__.info('BM: all roots:' + ''.join([f'\n{r}' for r in self.all_roots]))
-        # __log__.info('BM: conjugate roots:' + ''.join([f'\n{r}' for r in self.roots]))
-        # __log__.info(f'BM: mi1, mi2, mi3: \n{self.mi1}, \n{self.mi2}, \n{self.mi3}')
-        # __log__.debug(f'BM: la1, la2, la3: \n{self.la1}, \n{self.la2}, \n{self.la3}')
-        # __log__.info('-------------------- Beltrami-Michell --------------------')
+        __log__.debug(f'BM: compliance: \n{self.compliance!s}')
+        __log__.debug(f'BM: beta: \n{self.beta!s}')
+        __log__.debug('BM: a: ' + ' '.join([f'\n{a}' for a in self.a]))
+        __log__.info('BM: all roots:' + ''.join([f'\n{r}' for r in self.all_roots]))
+        __log__.info('BM: polished roots:' + ''.join([f'\n{r}' for r in self.p_roots]))
+        __log__.info('BM: conjugate roots:' + ''.join([f'\n{r}' for r in self.roots]))
+        __log__.info(f'BM: mi1, mi2, mi3: \n{self.mi1}, \n{self.mi2}, \n{self.mi3}')
+        __log__.debug(f'BM: la1, la2, la3: \n{self.la1}, \n{self.la2}, \n{self.la3}')
+        __log__.info('-------------------- Beltrami-Michell --------------------')
 
     def get_conjugate_roots(self):
         """Get only 3 conjugates"""
         con_roots = []
-        for i in self.all_roots:
+        for i in self.p_roots:
             if i.imag >= 0:
                 con_roots.append(i)
         return con_roots
+
+    def polish_roots(self, roots, coefs):
+        f = poly1d(coefs)
+        d = f.deriv()
+        pr = []
+        for r in roots:
+            pr.append(newton(f.__call__, r, d.__call__))
+        return pr
 
     @staticmethod
     def get_reduced_strain_coeff(a, clean=True):
@@ -67,15 +80,21 @@ class BeltramiMichell(HoopStress):
     def get_polynomial_coeffs(b, clean=True):
         a = np.zeros(7, dtype=np.complex64)
         a[6] = b[0, 0] * b[4, 4] - b[0, 4] * b[0, 4] + 0j
-        a[5] = 2 * b[0, 4] * (b[0, 3] + b[4, 5]) - 2 * (b[0, 5] * b[4, 4] + b[0, 0] * b[3, 4]) + 0j
+
+        a[5] = 2 * b[0, 4] * (b[0, 3] + b[4, 5]) - 2 * (b[0, 5] * b[4, 4] + b[0, 0] * b[3, 4]) + 0.0j
+
         a[4] = b[4, 4] * (2 * b[0, 1] + b[5, 5]) + 4 * b[0, 5] * b[3, 4] + b[0, 0] * b[3, 3] - \
-               (b[0, 3] + b[4, 5]) ** 2 - 2 * b[0, 4] * (b[1, 4] + b[3, 5]) + 0j
+               (b[0, 3] + b[4, 5]) ** 2 - 2 * b[0, 4] * (b[1, 4] + b[3, 5]) + 0.0j
+
         a[3] = -2 * b[1, 5] * b[4, 4] - 2 * b[3, 4] * (2 * b[0, 1] + b[5, 5]) - 2 * b[0, 5] * b[3, 3] + \
-               2 * b[0, 4] * b[1, 3] + 2 * (b[0, 3] + b[4, 5]) * (b[1, 4] + b[3, 5]) + 0j
+               2 * b[0, 4] * b[1, 3] + 2 * (b[0, 3] + b[4, 5]) * (b[1, 4] + b[3, 5]) + 0.0j
+
         a[2] = b[1, 1] * b[4, 4] + 4 * b[1, 5] * b[3, 4] + b[3, 3] * (2 * b[0, 1] + b[5, 5]) - \
-               2 * b[1, 3] * (b[0, 3] + b[4, 5]) - (b[1, 4] + b[3, 5]) ** 2 + 0j
-        a[1] = -2 * b[1, 1] * b[3, 4] - 2 * b[1, 5] * b[3, 3] + 2 * b[1, 3] * (b[1, 4] + b[3, 5]) + 0j
-        a[0] = b[1, 1] * b[3, 3] - b[1, 3] * b[1, 3] + 0j
+               2 * b[1, 3] * (b[0, 3] + b[4, 5]) - (b[1, 4] + b[3, 5]) ** 2 + 0.0j
+
+        a[1] = -2 * b[1, 1] * b[3, 4] - 2 * b[1, 5] * b[3, 3] + 2 * b[1, 3] * (b[1, 4] + b[3, 5]) + 0.0j
+
+        a[0] = b[1, 1] * b[3, 3] - b[1, 3] * b[1, 3] + 0.0j
 
         if clean:
             a[np.abs(a) < tolerance] = 0.0
