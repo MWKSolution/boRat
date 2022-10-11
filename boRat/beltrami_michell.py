@@ -54,11 +54,14 @@ class BeltramiMichell(HoopStress):
         return con_roots
 
     def polish_roots(self, roots, coefs):
+        print(coefs)
         f = poly1d(coefs)
         d = f.deriv()
         pr = []
         for r in roots:
-            pr.append(newton(f.__call__, r, d.__call__))
+            pr.append(newton(f.__call__, r, d.__call__, maxiter=10))
+
+        print(pr)
         return pr
 
     @staticmethod
