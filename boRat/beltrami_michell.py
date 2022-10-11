@@ -3,7 +3,6 @@ from numpy.polynomial.polynomial import polyroots
 from numpy import poly1d, polyder
 from scipy.optimize import newton
 # from laguerre import zroots
-from boRat.tensor import TensorVoigt
 from boRat.stress import Stress
 from boRat.config import __log__, tolerance
 
@@ -20,7 +19,7 @@ class HoopStress:
 
 class BeltramiMichell(HoopStress):
     def __init__(self, rock, far_field_stress, Pw, clean=True):
-        __log__.info('-------------------- Beltrami-Michell --------------------')
+        __log__.info('-------------------- Beltrami-Michell --------------------model setup')
         super().__init__(rock, far_field_stress, Pw)
         self.compliance = rock.compliance
         self.beta = self.get_reduced_strain_coeff(self.compliance.tensor, clean=clean)
@@ -30,20 +29,19 @@ class BeltramiMichell(HoopStress):
 
         self.roots = self.get_conjugate_roots()
         # :todo: sprawdzic to!
-        self.mi1,  self.mi2, self.mi3 = self.roots[1], self.roots[2], self.roots[0]
+        self.mi1,  self.mi2, self.mi3 = self.roots[2], self.roots[1], self.roots[0]
         self.la1 = - (self.I3(self.mi1) / self.I2(self.mi1))
         self.la2 = - (self.I3(self.mi2) / self.I2(self.mi2))
         self.la3 = - (self.I3(self.mi3) / self.I4(self.mi3))
 
-        __log__.debug(f'BM: compliance: \n{self.compliance!s}')
-        __log__.debug(f'BM: beta: \n{self.beta!s}')
-        __log__.debug('BM: a: ' + ' '.join([f'\n{a}' for a in self.a]))
-        __log__.info('BM: all roots:' + ''.join([f'\n{r}' for r in self.all_roots]))
-        __log__.info('BM: polished roots:' + ''.join([f'\n{r}' for r in self.p_roots]))
-        __log__.info('BM: conjugate roots:' + ''.join([f'\n{r}' for r in self.roots]))
-        __log__.info(f'BM: mi1, mi2, mi3: \n{self.mi1}, \n{self.mi2}, \n{self.mi3}')
-        __log__.debug(f'BM: la1, la2, la3: \n{self.la1}, \n{self.la2}, \n{self.la3}')
-        __log__.info('-------------------- Beltrami-Michell --------------------')
+        __log__.debug(f'BM: Reduced strain coeffs (beta): \n{self.beta!s}')
+        __log__.debug('BM: Polynimial coeffs (a): ' + ' '.join([f'\n{a:.6f}' for a in self.a]))
+        __log__.debug('BM: all roots:' + ''.join([f'\n{r:.6f}' for r in self.all_roots]))
+        __log__.debug('BM: polished roots:' + ''.join([f'\n{r:.6f}' for r in self.p_roots]))
+        __log__.debug('BM: conjugate roots:' + ''.join([f'\n{r:.6f}' for r in self.roots]))
+        __log__.info(f'BM: mi1, mi2, mi3: \n{self.mi1:.6f}, \n{self.mi2:.6f}, \n{self.mi3:.6f}')
+        __log__.debug(f'BM: la1, la2, la3: \n{self.la1:.6f}, \n{self.la2:.6f}, \n{self.la3:.6f}')
+        __log__.info('-------------------- Beltrami-Michell --------------------end')
 
     def get_conjugate_roots(self):
         """Get only 3 conjugates"""
@@ -54,14 +52,11 @@ class BeltramiMichell(HoopStress):
         return con_roots
 
     def polish_roots(self, roots, coefs):
-        print(coefs)
         f = poly1d(coefs)
         d = f.deriv()
         pr = []
         for r in roots:
             pr.append(newton(f.__call__, r, d.__call__, maxiter=10))
-
-        print(pr)
         return pr
 
     @staticmethod
@@ -71,10 +66,10 @@ class BeltramiMichell(HoopStress):
         for i in range(6):
             for j in range(6):
                 beta[i, j] = a[i, j] - ((a[i, 2] * a[j, 2]) / a[2, 2])
-        # B11, B55 = beta.tensor[0, 0], beta.tensor[4, 4]
-        # __log__.info(f'B11 = {B11:.4f}, B55 = {B55:.4f}')
-        # if np.isclose(B11, B55):
-        #     __log__.warning('B11 == B55 !!!')
+        B11, B55 = beta[0, 0], beta[4, 4]
+        __log__.debug(f'B11 = {B11:.6f}, B55 = {B55:.6f}')
+        if np.isclose(B11, B55):
+            __log__.warning('B11 == B55 !!!')
         if clean:
             beta[np.abs(beta) < tolerance] = 0.0
         return beta
@@ -160,9 +155,11 @@ class BeltramiMichell(HoopStress):
 
 class Kirsch(HoopStress):
     def __init__(self, rock, far_field_stress, Pw, clean=True):
+        __log__.info('-------------------- Kirsch --------------------model setup')
         super().__init__(rock, far_field_stress, Pw)
         c = rock.compliance.tensor
         self.PR = -c[0, 1] / c[0, 0]  # :todo: averaging of PR fot non ISO ???
+        __log__.info('-------------------- Kirsch --------------------end')
 
     def get_borehole_hoop_stress(self, theta):
         t = np.radians(theta)

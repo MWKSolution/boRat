@@ -13,11 +13,12 @@ class FormationDip:
     """Class defining formation dip: dip and direction along with vector perpendicular to bedding.
      For flat bedding vector is pointing in Z axis direction (down!!!)."""
 
-    def __init__(self, dip=0, dir=0):
+    def __init__(self, dip=0, dir=0, log=True):
         self.dip = dip  # formation dip
         self.dir = dir  # dip direction
         self.vector = self.get_normal_vector_NEV()
-        __log__.debug(f'Formation dip-> dip:{dip} dir:{dir} degs')
+        if log:
+            __log__.info(f'Formation dip: dip={dip} dir={dir} degs')
 
     def get_normal_vector_NEV(self):
         """Vector perpendicular to bedding. Since for flat bedding it is pointing down (Z axis direction) it has to be rotated with -dip value!"""
@@ -39,12 +40,18 @@ class Rock:
         ..."""
 
     # :todo: lampiere verification and other verifications for E, PR and G
-    def __init__(self, compliance=Compliance(), dip=FormationDip(), symmetry=None):
-        self.compliance = compliance
-        self.rot_PSC_to_NEV(dip.dip, dip.dir)
-        self.stiffness = Stiffness(self.get_stiffness())
-        self.dip = dip
+    def __init__(self, compliance=Compliance(), dip=FormationDip(log=False), symmetry=None, log=True):
         self.symmetry = symmetry
+        self.compliance = compliance
+        self.stiffness = Stiffness(self.get_stiffness())
+        if log:
+            __log__.info(f'{self.symmetry} rock:\n{self.compliance}\n{self.stiffness}')
+        if dip:
+            self.rot_PSC_to_NEV(dip.dip, dip.dir)
+            self.stiffness = Stiffness(self.get_stiffness())
+        self.dip = dip
+
+
 
     def get_stiffness(self):
         """Get stiffness from compliance. By definition, it is inversion of compliance."""
@@ -55,12 +62,15 @@ class Rock:
         self.rot_inplace(rotation)
 
     def rot_NEV_to_TOH(self, hazi, hdev):
+        __log__.debug(f'Rock in NEV:\n{self.compliance}\n{self.stiffness}')
         rotation = Rot.from_euler('YZ', [-hdev, -hazi], degrees=True)
-        return self.rot(rotation)
+        rotated = self.rot(rotation)
+        __log__.debug(f'Rock in TOH:\n{rotated.compliance}\n{rotated.stiffness}')
+        return rotated
 
     def rot(self, rotation):
         """Rotate compliance tensor with given angles and get stiffness tensor."""
-        rotated = Rock(self.compliance.rot(rotation))
+        rotated = Rock(self.compliance.rot(rotation), log=False)
         rotated.symmetry = self.symmetry
         return rotated
 
@@ -78,7 +88,7 @@ class Rock:
     def ISO_from_moduli(cls,
                         E=ISO_ROCK['E'],
                         PR=ISO_ROCK['PR'],
-                        dip=FormationDip()):
+                        dip=FormationDip(log=False)):
         """Set compliance tensor from given elastic moduli: Young Modulus(E) as Poisson Ratio(PR)"""
         # self.set_compliance(E, PR)
         # self.get_stiffness()
@@ -99,7 +109,7 @@ class Rock:
                         PRv=TIV_ROCK['PRv'],
                         PRhh=TIV_ROCK['PRhh'],
                         Gv=TIV_ROCK['Gv'],
-                        dip=FormationDip()):
+                        dip=FormationDip(log=False)):
         # C = self.stiffness.tensor
         # self.PRhv = - (C[0, 2]*(C[0, 1] - C[0, 0])) / (C[0, 0] * C[2, 2] - C[0, 2]**2)
         # self.Gv = Gv
@@ -123,7 +133,7 @@ class Rock:
                         Gyz=ORT_ROCK['Gyz'],
                         Gxz=ORT_ROCK['Gxz'],
                         Gxy=ORT_ROCK['Gxy'],
-                        dip=FormationDip()):
+                        dip=FormationDip(log=False)):
         #  :todo: add Huber approx check
         c = np.zeros((6, 6), dtype=np.float64)
         c[0, 0], c[0, 1], c[0, 2] = 1 / Ex, -PRyx / Ey, -PRzx / Ez

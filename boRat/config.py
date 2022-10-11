@@ -3,7 +3,7 @@ import numpy as np
 
 __version__ = '1.0.0'
 
-__log__ = MwkLogger(name='mech', stream_level='DEBUG').logger
+__log__ = MwkLogger(name='mech', stream_level='INFO').logger
 
 np.set_printoptions(suppress=True, precision=6)
 

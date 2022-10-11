@@ -19,7 +19,7 @@ class Stress:
         X is in the North direction, Y is in East direction,3 Z is down.
         SHAzi gives azimuth of X axis."""
         _stress = np.diag(np.array([SH, Sh, Sv], dtype=np.float64))
-        __log__.debug(f'PCS stress: SHazi={SHazi}\n{_stress}')
+        __log__.info(f'PCS stress: SHazi={SHazi}\n{_stress}')
         return cls(_stress, SHazi)
 
     def rot_PCS_to_NEV(self, SHazi=0.0):  # only SH azimuth, Sz always vertical !!!
@@ -27,10 +27,10 @@ class Stress:
         self.rot_inplace(rotation)
 
     def rot_NEV_to_TOH(self, hazi=0, hdev=0):
-        __log__.debug(f'NEV stress:\n{self.stress}')
+        __log__.debug(f'Stress in NEV:\n{self.stress}')
         rotation = Rot.from_euler('YZ', [-hdev, -hazi], degrees=True)
         rotated = self.rot(rotation)
-        __log__.debug(f'TOH stress:\n{rotated}')
+        __log__.debug(f'Stress in TOH:\n{rotated}')
         return rotated
 
     def rot(self, rotation=None):

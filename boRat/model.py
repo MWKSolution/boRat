@@ -94,7 +94,7 @@ class BoreholeModel:
 
 if __name__ == '__main__':
 
-    stress = Stress.from_PCS(SH=20, Sh=10, Sv=30, SHazi=0)
+    stress = Stress.from_PCS(SH=20, Sh=10, Sv=30, SHazi=10)
 
     ISO_ROCK = dict(E=30.14, PR=0.079)
     TIV_ROCK = dict(Ev=15.42, Eh=31.17, PRv=0.32, PRhh=0.079, Gv=7.05)

@@ -26,7 +26,7 @@ class TensorVoigt:
         self.tensor = bt_matrix @ self.tensor @ bt_matrix.transpose()
 
     def __repr__(self):
-        return f'TensorVoigt(\n{self.tensor!s})'
+        return f'{self.__class__.__name__}(\n{self.tensor!s})'
 
     def clean(self):
         """"Get rid of very small numbers in tensor"""
@@ -37,7 +37,7 @@ class TensorVoigt:
         """Function for creating Bond transformation matrix(6x6) from given 3x3 rotation matrix.
         !!! But only for compliance or stiffness !!!
         Defined here because there is reference in 'rot' method."""
-        # https://scicomp.stackexchange.com/questions/35600/4th-order-tensor-rotation-sources-to-refer
+        # B A Auld - Acoustic fields and waves in solids. Volume 1 - Interscience(1973). p. 73 - 76
         raise BondTransformationNotImplemented('Implemented only for child classes: Compliance, Stiffness.')
 
 
@@ -45,20 +45,20 @@ class Compliance(TensorVoigt):
 
     @staticmethod
     def bond_transformation(a):
-        """Function for creating Bond transformation matrix(6x6) from given 3x3 rotation matrix."""
-        l11, l12, l13 = a[0, 0], a[0, 1], a[0, 2]
-        l21, l22, l23 = a[1, 0], a[1, 1], a[1, 2]
-        l31, l32, l33 = a[2, 0], a[2, 1], a[2, 2]
+        """Function for creating Bond transformation matrix(6x6) from given 3x3 rotation matrix for compliance"""
+        lxx, lxy, lxz = a[0, 0], a[0, 1], a[0, 2]
+        lyx, lyy, lyz = a[1, 0], a[1, 1], a[1, 2]
+        lzx, lzy, lzz = a[2, 0], a[2, 1], a[2, 2]
         # rotation of compliance tensor for strains
-        bond = np.array([[l11 ** 2, l12 ** 2, l13 ** 2, l12 * l13, l13 * l11, l12 * l11],
-                         [l21 ** 2, l22 ** 2, l23 ** 2, l23 * l22, l23 * l21, l22 * l21],
-                         [l31 ** 2, l32 ** 2, l33 ** 2, l33 * l32, l33 * l31, l32 * l31],
-                         [2 * l31 * l21, 2 * l32 * l22, 2 * l33 * l23, l33 * l22 + l32 * l23, l33 * l21 + l31 * l23,
-                          l31 * l22 + l32 * l21],
-                         [2 * l31 * l11, 2 * l32 * l12, 2 * l33 * l13, l33 * l12 + l32 * l13, l33 * l11 + l31 * l13,
-                          l31 * l12 + l32 * l11],
-                         [2 * l21 * l11, 2 * l12 * l22, 2 * l13 * l23, l13 * l22 + l12 * l23, l13 * l21 + l11 * l23,
-                          l11 * l22 + l12 * l21]])
+        bond = np.array([[lxx ** 2, lxy ** 2, lxz ** 2, lxy * lxz, lxz * lxx, lxy * lxx],
+                         [lyx ** 2, lyy ** 2, lyz ** 2, lyz * lyy, lyz * lyx, lyy * lyx],
+                         [lzx ** 2, lzy ** 2, lzz ** 2, lzz * lzy, lzz * lzx, lzy * lzx],
+                         [2 * lzx * lyx, 2 * lzy * lyy, 2 * lzz * lyz, lzz * lyy + lzy * lyz, lzz * lyx + lzx * lyz,
+                          lzx * lyy + lzy * lyx],
+                         [2 * lzx * lxx, 2 * lzy * lxy, 2 * lzz * lxz, lzz * lxy + lzy * lxz, lzz * lxx + lzx * lxz,
+                          lzx * lxy + lzy * lxx],
+                         [2 * lyx * lxx, 2 * lxy * lyy, 2 * lxz * lyz, lxz * lyy + lxy * lyz, lxz * lyx + lxx * lyz,
+                          lxx * lyy + lxy * lyx]])
         return bond
 
 
@@ -66,23 +66,23 @@ class Stiffness(TensorVoigt):
 
     @staticmethod
     def bond_transformation(a):
-        """Function for creating Bond transformation matrix(6x6) from given 3x3 rotation matrix."""
-        l11, l12, l13 = a[0, 0], a[0, 1], a[0, 2]
-        l21, l22, l23 = a[1, 0], a[1, 1], a[1, 2]
-        l31, l32, l33 = a[2, 0], a[2, 1], a[2, 2]
+        """Function for creating Bond transformation matrix(6x6) from given 3x3 rotation matrix for stiffness"""
+        lxx, lxy, lxz = a[0, 0], a[0, 1], a[0, 2]
+        lyx, lyy, lyz = a[1, 0], a[1, 1], a[1, 2]
+        lzx, lzy, lzz = a[2, 0], a[2, 1], a[2, 2]
         # rotating of stiffness tensor for stresses
-        bond = np.array([[l11 ** 2, l12 ** 2, l13 ** 2, 2 * l12 * l13, 2 * l13 * l11, 2 * l12 * l11],
-                         [l21 ** 2, l22 ** 2, l23 ** 2, 2 * l23 * l22, 2 * l23 * l21, 2 * l22 * l21],
-                         [l31 ** 2, l32 ** 2, l33 ** 2, 2 * l33 * l32, 2 * l33 * l31, 2 * l32 * l31],
-                         [l31 * l21, l32 * l22, l33 * l23, l33 * l22 + l32 * l23, l33 * l21 + l31 * l23,
-                          l31 * l22 + l32 * l21],
-                         [l31 * l11, l32 * l12, l33 * l13, l33 * l12 + l32 * l13, l33 * l11 + l31 * l13,
-                          l31 * l12 + l32 * l11],
-                         [l21 * l11, l12 * l22, l13 * l23, l13 * l22 + l12 * l23, l13 * l21 + l11 * l23,
-                          l11 * l22 + l12 * l21]])
+        bond = np.array([[lxx ** 2, lxy ** 2, lxz ** 2, 2 * lxy * lxz, 2 * lxz * lxx, 2 * lxy * lxx],
+                         [lyx ** 2, lyy ** 2, lyz ** 2, 2 * lyz * lyy, 2 * lyz * lyx, 2 * lyy * lyx],
+                         [lzx ** 2, lzy ** 2, lzz ** 2, 2 * lzz * lzy, 2 * lzz * lzx, 2 * lzy * lzx],
+                         [lzx * lyx, lzy * lyy, lzz * lyz, lzz * lyy + lzy * lyz, lzz * lyx + lzx * lyz,
+                          lzx * lyy + lzy * lyx],
+                         [lzx * lxx, lzy * lxy, lzz * lxz, lzz * lxy + lzy * lxz, lzz * lxx + lzx * lxz,
+                          lzx * lxy + lzy * lxx],
+                         [lyx * lxx, lxy * lyy, lxz * lyz, lxz * lyy + lxy * lyz, lxz * lyx + lxx * lyz,
+                          lxx * lyy + lxy * lyx]])
         return bond
 
 
 if __name__ == '__main__':
     t = TensorVoigt()
-    t.bond_transformation('x')
+    # t.bond_transformation('x')
