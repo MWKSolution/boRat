@@ -24,9 +24,7 @@ class BeltramiMichell(HoopStress):
         self.compliance = rock.compliance
         self.beta = self.get_reduced_strain_coeff(self.compliance.tensor, clean=clean)
         self.a = self.get_polynomial_coeffs(self.beta, clean=clean)
-        self.all_roots = polyroots(self.a)
-        self.p_roots = self.polish_roots(self.all_roots, self.a)
-
+        self.all_roots = self.get_roots(self.a)
         self.roots = self.get_conjugate_roots()
         # :todo: sprawdzic to!
         self.mi1,  self.mi2, self.mi3 = self.roots[2], self.roots[1], self.roots[0]
@@ -37,7 +35,7 @@ class BeltramiMichell(HoopStress):
         __log__.debug(f'BM: Reduced strain coeffs (beta): \n{self.beta!s}')
         __log__.debug('BM: Polynimial coeffs (a): ' + ' '.join([f'\n{a:.6f}' for a in self.a]))
         __log__.debug('BM: all roots:' + ''.join([f'\n{r:.6f}' for r in self.all_roots]))
-        __log__.debug('BM: polished roots:' + ''.join([f'\n{r:.6f}' for r in self.p_roots]))
+        # __log__.debug('BM: polished roots:' + ''.join([f'\n{r:.6f}' for r in self.p_roots]))
         __log__.debug('BM: conjugate roots:' + ''.join([f'\n{r:.6f}' for r in self.roots]))
         __log__.info(f'BM: mi1, mi2, mi3: \n{self.mi1:.6f}, \n{self.mi2:.6f}, \n{self.mi3:.6f}')
         __log__.debug(f'BM: la1, la2, la3: \n{self.la1:.6f}, \n{self.la2:.6f}, \n{self.la3:.6f}')
@@ -46,18 +44,24 @@ class BeltramiMichell(HoopStress):
     def get_conjugate_roots(self):
         """Get only 3 conjugates"""
         con_roots = []
-        for i in self.p_roots:
+        for i in self.all_roots:
             if i.imag >= 0:
                 con_roots.append(i)
         return con_roots
 
-    def polish_roots(self, roots, coefs):
-        f = poly1d(coefs)
-        d = f.deriv()
-        pr = []
-        for r in roots:
-            pr.append(newton(f.__call__, r, d.__call__, maxiter=10))
-        return pr
+    @staticmethod
+    def get_roots(coefs, polish=True):
+
+        _roots = polyroots(coefs)
+        if polish:
+            f = poly1d(coefs)
+            d = f.deriv()
+            pr = []
+            for r in _roots:
+                pr.append(newton(f.__call__, r, d.__call__))
+            return pr
+        else:
+            return _roots
 
     @staticmethod
     def get_reduced_strain_coeff(a, clean=True):
@@ -177,3 +181,16 @@ class Kirsch(HoopStress):
                                        [tau_rz, tau_tz, sig_zz]])
         # hoop_stress_cart = hoop_stress.cart2cyl(-theta)
         return hoop_stress
+
+
+if __name__ == '__main__':
+    for i in range(1):
+        # r = np.random.random(6) + np.random.random(6) * 1j
+        r = np.zeros(6) + np.ones(6) * 1j
+        r.sort()
+        p = np.polynomial.polynomial.polyfromroots(r)
+        rr = BeltramiMichell.get_roots(p, polish=False)
+        rr.sort()
+        if not np.isclose(r, rr).all():
+            print('Error: ', rr)
+        print(r)
