@@ -51,8 +51,6 @@ class Rock:
             self.stiffness = Stiffness(self.get_stiffness())
         self.dip = dip
 
-
-
     def get_stiffness(self):
         """Get stiffness from compliance. By definition, it is inversion of compliance."""
         return np.linalg.inv(self.compliance.tensor)

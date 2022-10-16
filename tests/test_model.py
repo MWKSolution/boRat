@@ -22,7 +22,7 @@ class TestBeltramiMichell(unittest.TestCase):
                         for theta in range(0, 180, 20):
                             hoopBM = self.modelBM.get_hoop_stress(theta)
                             hoopK = self.modelK.get_hoop_stress(theta)
-                            self.assertTrue(np.isclose(hoopBM.stress, hoopK.stress, atol=1e-3).all())
+                            self.assertTrue(np.isclose(hoopBM.stress, hoopK.stress, atol=0.1, rtol=0).all())
                             print('.', end='')
                         print('OK')
 

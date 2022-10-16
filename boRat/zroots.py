@@ -14,9 +14,9 @@ class LaguerreIterationError(Exception):
 
 def laguerre(a, m, x):
     """The following routine implements the Laguerre method to find one root of a given polynomial of degree m, whose coefficients a can be complex.
-    a[]    - m+1 coefficients of complex polynomial
-    m      - degree of polynomial
-    x      - initial guess"""
+    a[] - m+1 coefficients of complex polynomial
+    m   - degree of polynomial
+    x   - initial guess"""
 
     EPSS = 1e-7  # Estimated fractional round-off error.
     FRAC = (0.5, 0.25, 0.75, 0.13, 0.38, 0.62, 0.88, 1.0)  # Fractions used to break a limit cycle.
@@ -77,8 +77,7 @@ def zroots(a, polish=True):
 
     EPS = 2.0e-6
     m = len(a)-1  # degree of polynomial based on number of coefficients
-    roots = np.empty(m+1, dtype=np.complex64)  # roots have indexes [1..m], first (0) will be removed at the end
-    its = 1  # number of iterations
+    roots = np.empty(m, dtype=np.complex64)  # roots have indexes [0..m-1]
 
     # Given the degree m and the m+1 complex coefficients a[0, .., m+1] of the polynomial SUM(i=0 to m)a(i)x**i,
     # this routine successively calls laguerre and finds all m complex roots roots[0, ... ,m-1].
@@ -91,7 +90,7 @@ def zroots(a, polish=True):
         x, its = laguerre(ad, j, x)  # Find the root, its - number of iterations
         if fabs(x.imag) <= 2 * EPS * fabs(x.real):
             x = x.real + 0j
-        roots[j] = x
+        roots[j-1] = x
         b = ad[j]  # Forward deflation.
         for jj in range(j-1, -1, -1):
             c = ad[jj]
@@ -99,21 +98,32 @@ def zroots(a, polish=True):
             b = x * b + c
     if polish:
         for j in range(1, m+1):  # Polish the roots using the undeflated coefficients.
-            roots[j], its = laguerre(a, m, roots[j])
-    roots = roots[1:]  # remove first element
-    roots.sort()
-    return roots, its
+            roots[j-1], its = laguerre(a, m, roots[j-1])
+
+    # sort ascending, firs real then imag but! if value close to zero for real sort imag first
+    # :todo: for now on values close to zero are zeroed to get sort by imag value. Anyway: what should be order of roots???
+    roots.real[abs(roots.real) < 1e-6] = 0.0
+    roots.imag[abs(roots.imag) < 1e-6] = 0.0
+    return np.sort_complex(roots)
+
+
+def conjugates(_roots):
+    """Roots are sorted primarily for real part but order of conjugates not necessarily will be + - + - + - so conjugates are chosen by sign of imag part"""
+    return [_r for _r in _roots if _r.imag >= 0]
 
 
 if __name__ == '__main__':
+    pass
     np.set_printoptions(suppress=True, precision=5)
     roots = []
     for i in range(100):
         r = np.random.random(6) + np.random.random(6) * 1j
         roots.append(r)
+
     for i in range(100):
         r = np.ones(6) + np.random.random(6) * 1j
         roots.append(r)
+
     for i in range(100):
         r = np.random.random(6) + np.ones(6) * 1j
         roots.append(r)
@@ -121,26 +131,26 @@ if __name__ == '__main__':
     for i in range(100):
         r = np.ones(6) + (np.random.random(6)*0.01) * 1j
         roots.append(r)
+
     for i in range(100):
-        r = (np.random.random(6)*0.01) + np.ones(6) * 1j
+        r = (np.random.random(6)*0.001) + np.ones(6) * 1j
         roots.append(r)
 
     r = np.ones(6) + np.ones(6) * 1j
     roots.append(r)
     r = np.zeros(6) + np.ones(6) * 1j
     roots.append(r)
-    r = np.ones(6) + np.zeros(6) * 1j
-    roots.append(r)
-    r = np.zeros(6) + np.zeros(6) * 1j
-    roots.append(r)
+
     e = 0
+    d = 0
     for t, r in enumerate(roots):
         r.sort()
         p = np.polynomial.polynomial.polyfromroots(r)
-        rr, its = zroots(p, polish=True)
-        rrr = np.polynomial.polynomial.polyroots(p)
+        # rr = zroots(p, polish=True)
+        rr = np.polynomial.polynomial.polyroots(p)
         rr.sort()
-        if not np.isclose(r, rr, atol=0.1, rtol=0).all():
+        print(rr)
+        if not np.isclose(r, rr, atol=0.01, rtol=0).all():
             e += 1
-    print('tests:  ', t)
+    print('tests:  ', t+1)
     print('errors: ', e)

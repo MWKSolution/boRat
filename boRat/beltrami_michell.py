@@ -5,6 +5,7 @@ from scipy.optimize import newton
 # from laguerre import zroots
 from boRat.stress import Stress
 from boRat.config import __log__, tolerance
+from boRat.zroots import zroots, conjugates
 
 
 class HoopStress:
@@ -24,44 +25,48 @@ class BeltramiMichell(HoopStress):
         self.compliance = rock.compliance
         self.beta = self.get_reduced_strain_coeff(self.compliance.tensor, clean=clean)
         self.a = self.get_polynomial_coeffs(self.beta, clean=clean)
-        self.all_roots = self.get_roots(self.a)
-        self.roots = self.get_conjugate_roots()
-        # :todo: sprawdzic to!
-        self.mi1,  self.mi2, self.mi3 = self.roots[2], self.roots[1], self.roots[0]
+        # self.roots = zroots(self.a, polish=True)
+        self.roots = zroots(self.a, polish=False)
+
+        # self.roots = polyroots(self.a)
+        self.croots = conjugates(self.roots) # only roots with positive real part
+        # Lekhnitskii (1963) has proved that the roots are always complex or purely imaginary, three of them being the conjugate of the three others
+        # :todo: check it! roots are in ascending order mi's are in descending. is it ok????
+        self.mi1,  self.mi2, self.mi3 = self.croots[2], self.croots[1], self.croots[0]
         self.la1 = - (self.I3(self.mi1) / self.I2(self.mi1))
         self.la2 = - (self.I3(self.mi2) / self.I2(self.mi2))
         self.la3 = - (self.I3(self.mi3) / self.I4(self.mi3))
 
         __log__.debug(f'BM: Reduced strain coeffs (beta): \n{self.beta!s}')
         __log__.debug('BM: Polynimial coeffs (a): ' + ' '.join([f'\n{a:.6f}' for a in self.a]))
-        __log__.debug('BM: all roots:' + ''.join([f'\n{r:.6f}' for r in self.all_roots]))
+        __log__.debug('BM: Roots:' + ''.join([f'\n{r:.6f}' for r in self.roots]))
         # __log__.debug('BM: polished roots:' + ''.join([f'\n{r:.6f}' for r in self.p_roots]))
-        __log__.debug('BM: conjugate roots:' + ''.join([f'\n{r:.6f}' for r in self.roots]))
+        __log__.debug('BM: conjugate roots:' + ''.join([f'\n{r:.6f}' for r in self.croots]))
         __log__.info(f'BM: mi1, mi2, mi3: \n{self.mi1:.6f}, \n{self.mi2:.6f}, \n{self.mi3:.6f}')
         __log__.debug(f'BM: la1, la2, la3: \n{self.la1:.6f}, \n{self.la2:.6f}, \n{self.la3:.6f}')
         __log__.info('-------------------- Beltrami-Michell --------------------end')
 
-    def get_conjugate_roots(self):
-        """Get only 3 conjugates"""
-        con_roots = []
-        for i in self.all_roots:
-            if i.imag >= 0:
-                con_roots.append(i)
-        return con_roots
+    # def get_conjugate_roots(self):
+    #     """Get only 3 conjugates"""
+    #     con_roots = []
+    #     for i in self.all_roots:
+    #         if i.imag >= 0:
+    #             con_roots.append(i)
+    #     return con_roots
 
-    @staticmethod
-    def get_roots(coefs, polish=True):
-
-        _roots = polyroots(coefs)
-        if polish:
-            f = poly1d(coefs)
-            d = f.deriv()
-            pr = []
-            for r in _roots:
-                pr.append(newton(f.__call__, r, d.__call__))
-            return pr
-        else:
-            return _roots
+    # @staticmethod
+    # def get_roots(coefs, polish=True):
+    #
+    #     _roots = polyroots(coefs)
+    #     if polish:
+    #         f = poly1d(coefs)
+    #         d = f.deriv()
+    #         pr = []
+    #         for r in _roots:
+    #             pr.append(newton(f.__call__, r, d.__call__))
+    #         return pr
+    #     else:
+    #         return _roots
 
     @staticmethod
     def get_reduced_strain_coeff(a, clean=True):
